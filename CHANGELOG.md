@@ -1,9 +1,12 @@
 # Änderungen
 
-## 0.1.1 · 29.09.2026 · Android Preview
+## 0.1.2 · 29.09.2026 · Android Preview
 
 - Dynamisch geladene Objekterkennung durch fest eingebautes SSD-MobileNet mit 80 Klassen ersetzen.
 - Offline-Initialisierung aller Modelle und tatsächliche Hunde-Erkennung mit Referenzfoto absichern.
+- Emulatortests im Flugmodus mit ausgeschaltetem WLAN und mobilen Daten ausführen.
+
+## 0.1.1 · 29.09.2026 · Android Preview
 
 - Kameraaufnahme im Emulator bis zum automatisch gespeicherten PMDD-Projekt prüfen.
 - Stilwechsel und Erhalt der Originalbytes über Activity-Neustarts prüfen.

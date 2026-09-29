@@ -22,6 +22,8 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class DeviceTest {
     @Test fun bundledModelAndProjectPipelineWorkOnDevice()=runBlocking {
+        val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        assertEquals("Inference is tested in airplane mode", "1",device.executeShellCommand("settings get global airplane_mode_on").trim())
         val context=InstrumentationRegistry.getInstrumentation().targetContext
         val store=ProjectStore(context);val p=store.create(Recipe())
         val photo=InstrumentationRegistry.getInstrumentation().context.assets.open("dogs.jpg").use{BitmapFactory.decodeStream(it)}!!

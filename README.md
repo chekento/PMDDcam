@@ -4,9 +4,9 @@
 
 [![Android Build](https://github.com/chekento/PMDDcam/actions/workflows/android.yml/badge.svg)](https://github.com/chekento/PMDDcam/actions/workflows/android.yml)
 
-## [⬇ PMDDcam 0.1.1 · Android-APK herunterladen](https://github.com/chekento/PMDDcam/releases/download/v0.1.1/PMDDcam-0.1.1.apk)
+## [⬇ PMDDcam 0.1.2 · Android-APK herunterladen](https://github.com/chekento/PMDDcam/releases/download/v0.1.2/PMDDcam-0.1.2.apk)
 
-Android 8.0 oder neuer · ARM64 / ARMv7 / x86_64 · persönliche Preview-Version. Der Download wird nach erfolgreichem Build, Unit-Tests, Lint und Emulatorprüfung veröffentlicht. [Release & Prüfsumme](https://github.com/chekento/PMDDcam/releases/tag/v0.1.1) · [Build-Artefakte](https://github.com/chekento/PMDDcam/actions).
+Android 8.0 oder neuer · ARM64 / ARMv7 / x86_64 · persönliche Preview-Version. Der Download wird nach erfolgreichem Build, Unit-Tests, Lint und Emulatorprüfung veröffentlicht. [Release & Prüfsumme](https://github.com/chekento/PMDDcam/releases/tag/v0.1.2) · [Build-Artefakte](https://github.com/chekento/PMDDcam/actions).
 
 ## Vom Foto zum PMDD-Projekt
 
@@ -80,6 +80,6 @@ Die Preview verwendet einen absichtlich öffentlichen Entwicklungsschlüssel in 
 
 ## Prüfungen und Grenzen der Preview
 
-Die CI prüft Rezepte, Grenzwerte, konstante/ungültige Tiefenwerte, 60 unterschiedliche Stilresultate, deterministisches Rendering, unveränderte Originalbytes, Archive, lokalen Modelllauf einschließlich bekannter Hunde-Erkennungen, echte CameraX-Aufnahme über die virtuelle Kamera, Stilwechsel und Activity-Neustart auf einem Android-35-Emulator. Reale Kameraqualität, Latenz und die subjektive PMDD-Wirkung müssen zusätzlich auf echten Geräten und mit unterschiedlichen Fotos beurteilt werden. Export bis 4096 Pixel längste Kante; bei kleinem App-Heap maximal 2048 Pixel. Originale behalten ihre ursprünglichen Bytes und Auflösung.
+Die CI prüft Rezepte, Grenzwerte, konstante/ungültige Tiefenwerte, 60 unterschiedliche Stilresultate, deterministisches Rendering, unveränderte Originalbytes, Archive, lokalen Modelllauf einschließlich bekannter Hunde-Erkennungen, echte CameraX-Aufnahme über die virtuelle Kamera, Stilwechsel und Activity-Neustart auf einem Android-35-Emulator im Flugmodus (WLAN und mobile Daten aus). Reale Kameraqualität, Latenz und die subjektive PMDD-Wirkung müssen zusätzlich auf echten Geräten und mit unterschiedlichen Fotos beurteilt werden. Export bis 4096 Pixel längste Kante; bei kleinem App-Heap maximal 2048 Pixel. Originale behalten ihre ursprünglichen Bytes und Auflösung.
 
 MiDaS, SSD-MobileNet-Modell und ONNX Runtime: MIT. AndroidX/Kotlin: jeweilige Apache-2.0-Lizenzen. ML Kit: Google-Bedingungen. Hinweise in [THIRD_PARTY.txt](app/src/main/assets/THIRD_PARTY.txt). Für den eigenen App-Quellcode wurde keine zusätzliche Open-Source-Lizenz festgelegt.
