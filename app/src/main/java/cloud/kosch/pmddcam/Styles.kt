@@ -3,7 +3,9 @@ package cloud.kosch.pmddcam
 enum class Technique { PHOTO, COMIC, WATERCOLOR, INK, PENCIL, OIL, PIXEL, HALFTONE, NEON, DUOTONE, HATCH, SOLAR }
 data class PhotoStyle(val id:String,val name:String,val group:String,val technique:Technique,
     val warmth:Float=0f,val saturation:Float=1f,val contrast:Float=1f,val levels:Int=256,
-    val tint:Int=0xffb8d4ff.toInt(),val grain:Float=0f)
+    val tint:Int=0xffb8d4ff.toInt(),val grain:Float=0f,
+    val ink:Float=.68f,val lift:Float=0f,val toning:Float=0f,
+    val shadow:Int=0xff142c48.toInt(),val highlight:Int=0xfff2ead8.toInt())
 
 object Styles {
     // Each preset changes an actual rendering recipe; PMDD is applied after every style.
@@ -68,6 +70,35 @@ object Styles {
         PhotoStyle("arctic","Arctic Ice","Atmosphäre",Technique.PHOTO,-.26f,.5f,1.02f),
         PhotoStyle("moon","Moonlight","Atmosphäre",Technique.DUOTONE,-.18f,.2f,1.25f,256,0xff7c97c4.toInt()),
         PhotoStyle("velvet","Velvet Dusk","Atmosphäre",Technique.DUOTONE,.05f,.6f,.87f,256,0xffc58bbf.toInt())
-    )
+    ).map { s ->
+        when(s.id){
+            "cinema"->s.copy(shadow=0xff174750.toInt(),highlight=0xffffbd7d.toInt(),toning=.7f)
+            "portrait"->s.copy(lift=.025f,shadow=0xff71526b.toInt(),highlight=0xffffdcc4.toInt(),toning=.25f)
+            "gold"->s.copy(shadow=0xff733b32.toInt(),highlight=0xffffce7a.toInt(),toning=.7f)
+            "blue"->s.copy(shadow=0xff203264.toInt(),highlight=0xff9acffa.toInt(),toning=.65f)
+            "matte"->s.copy(lift=.075f,toning=.35f)
+            "retro70"->s.copy(lift=.045f,shadow=0xff3b6756.toInt(),highlight=0xffffc581.toInt(),toning=.6f)
+            "retro80"->s.copy(shadow=0xff493662.toInt(),highlight=0xff93dbeb.toInt(),toning=.5f)
+            "instant"->s.copy(lift=.09f,shadow=0xff355a68.toInt(),highlight=0xffeec59e.toInt(),toning=.35f)
+            "manga"->s.copy(ink=.92f)
+            "anime"->s.copy(ink=.4f)
+            "ligne"->s.copy(ink=.52f,lift=.025f)
+            "graphic"->s.copy(ink=.86f)
+            "pastelcel"->s.copy(ink=.3f,lift=.08f)
+            "storybook"->s.copy(toning=.3f,shadow=0xff775275.toInt(),highlight=0xffffdfb0.toInt())
+            "sepia"->s.copy(shadow=0xff271709.toInt(),highlight=0xfff9e2b1.toInt(),saturation=.85f)
+            "cyanotype"->s.copy(shadow=0xff061f54.toInt(),highlight=0xffd8eef3.toInt())
+            "synthwave"->s.copy(shadow=0xff361349.toInt(),highlight=0xff78e8f2.toInt(),saturation=1.25f)
+            "desert"->s.copy(shadow=0xff55352c.toInt(),highlight=0xffffe8b1.toInt(),saturation=.8f)
+            "underwater"->s.copy(shadow=0xff072a45.toInt(),highlight=0xffa1eee1.toInt())
+            "moon"->s.copy(shadow=0xff0d142c.toInt(),highlight=0xffc9ddfa.toInt(),saturation=.7f)
+            "velvet"->s.copy(shadow=0xff391c43.toInt(),highlight=0xfff7ccd6.toInt())
+            "emerald"->s.copy(shadow=0xff145142.toInt(),highlight=0xffd4eea7.toInt(),toning=.65f)
+            "sakura"->s.copy(shadow=0xff8b5789.toInt(),highlight=0xffffd2df.toInt(),toning=.65f)
+            "arctic"->s.copy(shadow=0xff276e94.toInt(),highlight=0xffc6f7fa.toInt(),toning=.5f)
+            "vhs"->s.copy(technique=Technique.PHOTO,toning=.4f,shadow=0xff5b346b.toInt(),highlight=0xff87e2df.toInt())
+            else->s
+        }
+    }
     fun get(id:String)=all.firstOrNull{it.id==id}?:all.first()
 }

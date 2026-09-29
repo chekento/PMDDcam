@@ -58,9 +58,10 @@ class DepthViewer(context:Context):GLSurfaceView(context),GLSurfaceView.Renderer
         for(i in 0..1){glActiveTexture(GL_TEXTURE0+i);glBindTexture(GL_TEXTURE_2D,textures[i]);glUniform1i(glGetUniformLocation(program,if(i==0)"photo" else "depthMap"),i)}
         val r=recipe
         val geometry=(r.screenSize/16f*45f/r.viewDistance).coerceIn(.4f,2f)
-        val amount=if(active)r.parallax*r.depth*.035f*geometry else 0f
+        val amount=if(active)(1-exp(-r.parallax*r.depth*.9f*geometry))*.085f else 0f
         glUniform3f(glGetUniformLocation(program,"eye"),if(r.horizontal)viewX*amount else 0f,if(r.vertical)viewY*amount else 0f,if(r.distance)viewZ*amount*1.8f else 0f)
         glUniform1f(glGetUniformLocation(program,"focusDepth"),r.focus)
+        glUniform1f(glGetUniformLocation(program,"layerCount"),r.layers.toFloat())
         val imageAspect=bitmap.width.toFloat()/bitmap.height;val screenAspect=canvasWidth.toFloat()/canvasHeight
         val fitX=if(imageAspect>screenAspect)1f else imageAspect/screenAspect
         val fitY=if(imageAspect>screenAspect)screenAspect/imageAspect else 1f
@@ -82,17 +83,25 @@ class DepthViewer(context:Context):GLSurfaceView(context),GLSurfaceView.Renderer
         private const val VERTEX="""attribute vec2 position; varying vec2 uv; uniform vec2 fit;
             void main(){gl_Position=vec4(position*fit,0.,1.);uv=vec2(position.x*.5+.5,.5-position.y*.5);}"""
         private const val FRAGMENT="""precision highp float;
-            varying vec2 uv; uniform sampler2D photo; uniform sampler2D depthMap; uniform vec3 eye; uniform float focusDepth;
+            varying vec2 uv; uniform sampler2D photo; uniform sampler2D depthMap; uniform vec3 eye; uniform float focusDepth; uniform float layerCount;
             void main(){
                 vec2 direction=eye.xy+(uv-.5)*eye.z;
+                if(dot(direction,direction)<.00000001){gl_FragColor=texture2D(photo,uv);return;}
                 vec2 best=uv;
-                float hit=0.;
-                // Front-to-back depth intersections preserve foreground occlusion.
-                for(int i=0;i<64;i++){
-                    float plane=1.-float(i)/63.;
+                float hit=0.; float previousGap=0.; float previousPlane=1.;
+                // Continuous intersections; layer count changes sampling, never photo shading.
+                for(int i=0;i<128;i++){
+                    if(float(i)>=layerCount)break;
+                    float plane=1.-float(i)/(layerCount-1.);
                     vec2 p=uv-direction*(plane-focusDepth);
                     float d=texture2D(depthMap,clamp(p,vec2(.001),vec2(.999))).r;
-                    if(hit<.5 && d>=plane){best=p;hit=1.;}
+                    float gap=plane-d;
+                    if(hit<.5 && gap<=0.){
+                        float fraction=previousGap/max(.00001,previousGap-gap);
+                        float surface=mix(previousPlane,plane,clamp(fraction,0.,1.));
+                        best=uv-direction*(surface-focusDepth);hit=1.;
+                    }
+                    previousGap=max(0.,gap);previousPlane=plane;
                 }
                 // Clamp edge sampling; limited excursion prevents broad unseen regions.
                 gl_FragColor=texture2D(photo,clamp(best,vec2(.001),vec2(.999)));

@@ -40,15 +40,15 @@ data class Recipe(
     var outputSize: Int = 2560
 ) {
     fun normalized(): Recipe = copy(
-        layers=layers.coerceIn(8,128), depth=depth.safe(.85f,0f,1.5f),
+        layers=layers.coerceIn(8,128), depth=depth.safe(.85f,0f,2.5f),
         separation=separation.safe(.75f), focus=focus.safe(.6f), relief=relief.safe(.55f),
         haze=haze.safe(.24f), bokeh=bokeh.safe(.18f), sharpness=sharpness.safe(.4f),
         occlusion=occlusion.safe(.3f), texture=texture.safe(.28f), vignette=vignette.safe(.15f),
         exposure=exposure.safe(0f,-1f,1f), contrast=contrast.safe(.12f,-.5f,.8f),
         saturation=saturation.safe(1.08f,0f,2f), style=Styles.get(style).id,
-        styleMix=styleMix.safe(.85f),motionAmount=motionAmount.safe(.32f),
+        styleMix=styleMix.safe(.85f),motionAmount=motionAmount.safe(.32f,0f,2f),
         motionScale=motionScale.safe(.6f),peripheral=peripheral.safe(.7f),
-        depthCoupling=depthCoupling.safe(.8f),parallax=parallax.safe(.7f),
+        depthCoupling=depthCoupling.safe(.8f),parallax=parallax.safe(.7f,0f,2f),
         viewDistance=viewDistance.safe(45f,20f,150f),screenSize=screenSize.safe(16f,8f,100f),
         outputSize=outputSize.coerceIn(1024,4096)
     )

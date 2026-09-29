@@ -1,4 +1,4 @@
-# PMDDcam 0.1.0 – Umsetzung
+# PMDDcam 0.2.0 – Umsetzung
 
 ## Datenfluss
 
@@ -10,7 +10,7 @@ Die interaktive Ansicht liest das fertige Bild und dasselbe effektive Tiefenfeld
 
 | PMDD-Prinzip | Implementierung | Grenze |
 |---|---|---|
-| L1/L2 Depth Foundation | Relative KI-Tiefe, 8–128 Stufen, Kontrasthierarchie, Atmosphäre, Lichtrelief, Schärfe, Hintergrundweichzeichnung | Die Aufnahme liefert Perspektive und reale Überdeckungen; die App erfindet keine neue Kamera-Geometrie |
+| L1/L2 Depth Foundation | Kontinuierliche relative KI-Tiefe, 8–128 Viewer-Abtastebenen, Kontrasthierarchie, Atmosphäre, Lichtrelief, Schärfe, Hintergrundweichzeichnung | Die Aufnahme liefert Perspektive und reale Überdeckungen; die App erfindet keine neue Kamera-Geometrie |
 | L3 Depth Dynamics | Radiale statische Mikro-Kontraste für Approach/Retreat, tiefengekoppelte Stärke | Wahrnehmungshinweis, keine physische Bewegung |
 | L4 Selective Motion | SceneObject mit Rolle, Richtung, Motion Identity, Tempo, Intensität; weiches lokales Feld | Allgemeine Objektgrenzen sind tiefengeführte Regionen; Personenmaske ist separat |
 | L5 Viewing Geometry | Peripheriegewichtung, Distanz/Bildbreite, interaktiver Viewer mit drei Steuerachsen | Ein einzelnes Foto ist kein Stereo-Paar |
@@ -18,6 +18,14 @@ Die interaktive Ansicht liest das fertige Bild und dasselbe effektive Tiefenfeld
 | PMG / Hierarchie | Hauptsignal plus gerichtetes sekundäres Mikrosignal | Keine automatisch rekonstruierte komplette semantische Kausalkette, z. B. neue Partikel hinter einem Fahrzeug |
 | Depth Locking | Gesichts- und Ankerbereiche unterdrücken Bewegungsmuster; Tiefen und Originalüberdeckungen bleiben gemeinsam | Das 2.5D-Feld kennt keine verdeckten Oberflächen |
 | Object-bound Fields | Gefiederte Bereichsgrenzen, Tiefe als zusätzliche Zugehörigkeit, keine globale Wellenverformung | Manuelle Bereiche haben weiche statt exakter semantischer Grenzen |
+
+## Rendering und Oberfläche ab 0.2.0
+
+Die Tiefenkarte bleibt kontinuierlich. Farbgewichtete bilineare Interpolation führt ihre Vergrößerung am Foto. Das Lichtrelief nutzt vorhandene Bilddetails statt Ableitungen des niedrig aufgelösten Tiefenmodells; dadurch entstehen keine erfundenen Schlagschatten an dessen Grenzen. Ein separabler lokaler Tiefpass ersetzt die grobe Verkleinerungs-/Vergrößerungsunschärfe. Die globale Atmosphäre folgt fotografierten Richtungsdetails und trägt keine periodische Welle mehr über Himmel und Gebäude. Objektbewegungen bleiben weich maskiert und auf vorhandene Struktur begrenzt.
+
+Die Tiefenstärke reicht bis 2,5, Bewegungs- und Parallaxenstärke bis 2,0. Der statische Kontrastgewinn wächst überproportional; die interaktive Verschiebung wächst kontinuierlich bis zu einer begrenzten Auslenkung. Der Viewer interpoliert den Schnittpunkt im Tiefenfeld zwischen 8–128 Abtastebenen. Stiloperationen werden vor der Stilmischung ausgeführt, sodass 0 % jeden Stil vollständig deaktiviert.
+
+CameraX-Preview und Aufnahme teilen einen ViewPort; die FILL_CENTER-Vorschau füllt den Bildschirm und die Aufnahme übernimmt denselben Ausschnitt. Bedienelemente liegen mit System-/Cutout-Abstand darüber. In der Bearbeitung bleibt das vollständige Foto seitenverhältnistreu. Original/PMDD ist direkt erreichbar, weitere Einstellungen liegen in den drei Menüs Looks, PMDD und Werkzeuge.
 
 ## Dateien pro Projekt
 

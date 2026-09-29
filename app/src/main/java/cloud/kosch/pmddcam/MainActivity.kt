@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.*
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.RippleDrawable
 import android.hardware.*
 import android.net.Uri
 import android.os.Bundle
@@ -23,6 +24,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.*
 import org.json.JSONObject
@@ -37,9 +40,8 @@ class MainActivity:ComponentActivity(),SensorEventListener {
     private val surfaceColor=Color.rgb(23,32,46)
     private val accent=Color.rgb(134,241,209)
     private val muted=Color.rgb(154,172,191)
-    private lateinit var root:LinearLayout
+    private lateinit var root:FrameLayout
     private lateinit var content:FrameLayout
-    private lateinit var dock:LinearLayout
     private lateinit var status:TextView
     private lateinit var busy:LinearLayout
     private lateinit var busyLabel:TextView
@@ -72,6 +74,11 @@ class MainActivity:ComponentActivity(),SensorEventListener {
     private var captureEpoch=0
     private var analysisNote=""
     private var styleCaption:TextView?=null
+    private var compareButton:Button?=null
+    private var chrome:FrameLayout?=null
+    private var popup:PopupWindow?=null
+    private var safeLeft=0;private var safeTop=0;private var safeRight=0;private var safeBottom=0
+    private var zoomChip:Button?=null
     private val pickPhoto=registerForActivityResult(ActivityResultContracts.OpenDocument()){uri->if(uri!=null)importPhoto(uri)}
     private val pickProject=registerForActivityResult(ActivityResultContracts.OpenDocument()){uri->if(uri!=null)runTask("Projekt wird wiederhergestellt …"){
         val p=withContext(Dispatchers.IO){store.restore(uri)};openProject(p)
@@ -87,23 +94,23 @@ class MainActivity:ComponentActivity(),SensorEventListener {
         val state=savedInstanceState
         store=ProjectStore(applicationContext)
         exportKind=state?.getString("exportKind")?:"png"
-        root=column().apply{setBackgroundColor(backgroundColor)}
-        ViewCompat.setOnApplyWindowInsetsListener(root){v,insets->val bars=insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout());v.setPadding(bars.left,bars.top,bars.right,bars.bottom);insets}
-        val header=row().apply{setPadding(dp(20),dp(14),dp(14),dp(6));gravity=Gravity.CENTER_VERTICAL}
-        header.addView(ImageView(this).apply{setImageResource(cloud.kosch.pmddcam.R.drawable.ic_launcher)},LinearLayout.LayoutParams(dp(42),dp(42)))
-        val branding=column().apply{setPadding(dp(12),0,0,0);addView(label("PMDDcam",24f,Color.WHITE,true));addView(label("PHOTOGRAPH A DEEPER WORLD",9f,accent))}
-        header.addView(branding,LinearLayout.LayoutParams(0,-2,1f));header.addView(button("?",false){about()},LinearLayout.LayoutParams(dp(48),dp(48)));root.addView(header)
-        status=label("PMDD 4.0 · 64 Tiefenebenen · lokal",12f,muted).apply{setPadding(dp(22),dp(2),dp(16),dp(12))};root.addView(status)
-        val shell=FrameLayout(this);content=FrameLayout(this);shell.addView(content,FrameLayout.LayoutParams(-1,-1))
+        WindowCompat.setDecorFitsSystemWindows(window,false)
+        root=FrameLayout(this).apply{setBackgroundColor(backgroundColor)}
+        ViewCompat.setOnApplyWindowInsetsListener(root){_,insets->
+            val bars=insets.getInsetsIgnoringVisibility(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
+            safeLeft=bars.left;safeTop=bars.top;safeRight=bars.right;safeBottom=bars.bottom
+            chrome?.setPadding(safeLeft,safeTop,safeRight,safeBottom);insets
+        }
+        status=label("",11f,muted)
+        content=FrameLayout(this);root.addView(content,FrameLayout.LayoutParams(-1,-1))
         busy=column().apply{gravity=Gravity.CENTER;setPadding(dp(28),dp(24),dp(28),dp(24));setBackgroundColor(0xed0b1018.toInt());isClickable=true;isFocusable=true;visibility=View.GONE}
         busy.addView(ProgressBar(this),LinearLayout.LayoutParams(dp(48),dp(48)))
         busyLabel=label("Bild wird verarbeitet …",17f,Color.WHITE,true).apply{gravity=Gravity.CENTER;setPadding(0,dp(20),0,dp(16))};busy.addView(busyLabel)
         busy.addView(button("Abbrechen · Original behalten"){}.apply{setOnClickListener{task?.cancel();rendering?.cancel();busy.visibility=View.GONE;showLibrary()}})
-        shell.addView(busy,FrameLayout.LayoutParams(-1,-1));root.addView(shell,LinearLayout.LayoutParams(-1,0,1f))
-        val navigation=HorizontalScrollView(this).apply{isHorizontalScrollBarEnabled=false;setPadding(dp(10),dp(8),dp(10),dp(10))};dock=row();navigation.addView(dock);root.addView(navigation)
-        setContentView(root)
+        root.addView(busy,FrameLayout.LayoutParams(-1,-1));setContentView(root);immersive()
         onBackPressedDispatcher.addCallback(this,object:OnBackPressedCallback(true){override fun handleOnBackPressed(){
             if(busy.visibility==View.VISIBLE){message("Die Verarbeitung läuft. Mit „Abbrechen“ bleibt das Original erhalten.");return}
+            if(popup?.isShowing==true){popup?.dismiss();return}
             if(page!="camera")showCamera() else{isEnabled=false;onBackPressedDispatcher.onBackPressed()}
         }})
         val last=state?.getString("project")
@@ -125,35 +132,67 @@ class MainActivity:ComponentActivity(),SensorEventListener {
     private fun clearPage(){
         captureEpoch++;stopTracking();provider?.unbindAll();capture=null;camera=null
         rendering?.cancel();viewer?.release();viewer?.onPause();viewer=null;preview=null
-        content.removeAllViews();dock.removeAllViews()
+        popup?.dismiss();popup=null;chrome=null;styleCaption=null;compareButton=null;zoomChip=null
+        content.removeAllViews()
     }
-    private fun nav(text:String,action:()->Unit){dock.addView(button(text,false,action),LinearLayout.LayoutParams(-2,dp(48)).apply{marginEnd=dp(7)})}
-
+    private fun newChrome():FrameLayout=FrameLayout(this).apply{
+        setPadding(safeLeft,safeTop,safeRight,safeBottom);clipToPadding=false
+        chrome=this;content.addView(this,FrameLayout.LayoutParams(-1,-1))
+    }
+    private fun immersive(){WindowCompat.getInsetsController(window,window.decorView).apply{
+        systemBarsBehavior=WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        hide(WindowInsetsCompat.Type.systemBars())
+    }}
     private fun showCamera(){
-        clearPage();page="camera";setStatus("Aufnehmen. Tiefe entdecken. Später neu gestalten.")
-        val layout=column().apply{setPadding(dp(14),0,dp(14),0)}
-        val quick=row().apply{gravity=Gravity.CENTER}
-        quick.addView(button("Blitz: ${flashName()}"){flash=(flash+1)%3;capture?.flashMode=flash;(itLabel(quick,0)).text="Blitz: ${flashName()}"},LinearLayout.LayoutParams(0,dp(48),1f))
-        quick.addView(button("Timer: ${timer}s"){timer=when(timer){0->3;3->10;else->0};itLabel(quick,1).text="Timer: ${timer}s"},LinearLayout.LayoutParams(0,dp(48),1f))
-        quick.addView(button("Raster ${if(grid)"an" else "aus"}"){grid=!grid;showCamera()},LinearLayout.LayoutParams(0,dp(48),1f));layout.addView(quick)
-        val stage=FrameLayout(this).apply{background=shape(surfaceColor,24f);clipToOutline=true}
-        val cameraPreview=PreviewView(this).apply{scaleType=PreviewView.ScaleType.FIT_CENTER;implementationMode=PreviewView.ImplementationMode.COMPATIBLE;contentDescription="Kameravorschau"};preview=cameraPreview
-        stage.addView(cameraPreview,FrameLayout.LayoutParams(-1,-1))
-        if(grid)stage.addView(object:View(this){private val p=Paint().apply{color=0x45ffffff;strokeWidth=1f};override fun onDraw(c:Canvas){for(i in 1..2){c.drawLine(width*i/3f,0f,width*i/3f,height.toFloat(),p);c.drawLine(0f,height*i/3f,width.toFloat(),height*i/3f,p)}}},FrameLayout.LayoutParams(-1,-1))
-        val badge=label("L5  •  ${defaults().layers} LAYER  •  ORIGINAL SICHER",10f,accent,true).apply{setPadding(dp(12),dp(8),dp(12),dp(8));background=shape(0xc9111e2c.toInt(),16f)}
-        stage.addView(badge,FrameLayout.LayoutParams(-2,-2,Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply{topMargin=dp(16)})
-        layout.addView(stage,LinearLayout.LayoutParams(-1,0,1f).apply{topMargin=dp(8);bottomMargin=dp(8)})
-        val zoomLabel=label("Zoom · 1.0×",12f,muted);layout.addView(zoomLabel)
-        layout.addView(SeekBar(this).apply{max=100;contentDescription="Kamerazoom";setOnSeekBarChangeListener(seek{value->val state=camera?.cameraInfo?.zoomState?.value;val maxZoom=minOf(8f,state?.maxZoomRatio?:1f);val minZoom=state?.minZoomRatio?:1f;val ratio=minZoom+(maxZoom-minZoom)*value;camera?.cameraControl?.setZoomRatio(ratio);zoomLabel.text="Zoom · %.1f×".format(ratio)})})
-        val shutterRow=row().apply{gravity=Gravity.CENTER_VERTICAL;setPadding(0,dp(6),0,dp(10))}
-        shutterRow.addView(button("Import"){pickPhoto.launch(arrayOf("image/*"))},LinearLayout.LayoutParams(0,dp(64),1f))
-        shutterRow.addView(button("●",true){takePhoto()}.apply{contentDescription="Foto aufnehmen"},LinearLayout.LayoutParams(dp(84),dp(76)).apply{marginStart=dp(14);marginEnd=dp(14)})
-        shutterRow.addView(button("Wechsel"){front=!front;bindCamera(cameraPreview)},LinearLayout.LayoutParams(0,dp(64),1f));layout.addView(shutterRow)
-        content.addView(layout,FrameLayout.LayoutParams(-1,-1))
-        nav("Sammlung"){showLibrary()};nav("Vorgaben"){settingsDialog(defaults(),true)};nav("Projekt öffnen"){pickProject.launch(arrayOf("application/zip","application/octet-stream"))}
-        requireCamera{bindCamera(cameraPreview)}
+        clearPage();page="camera"
+        val cameraPreview=PreviewView(this).apply{scaleType=PreviewView.ScaleType.FILL_CENTER;implementationMode=PreviewView.ImplementationMode.COMPATIBLE;contentDescription="Kameravorschau"};preview=cameraPreview
+        content.addView(cameraPreview,FrameLayout.LayoutParams(-1,-1))
+        val guide=object:View(this){private val p=Paint().apply{color=0x45ffffff;strokeWidth=1f};override fun onDraw(c:Canvas){if(grid)for(i in 1..2){c.drawLine(width*i/3f,0f,width*i/3f,height.toFloat(),p);c.drawLine(0f,height*i/3f,width.toFloat(),height*i/3f,p)}}}
+        content.addView(guide,FrameLayout.LayoutParams(-1,-1))
+        val overlay=newChrome()
+        val top=row().apply{gravity=Gravity.CENTER_VERTICAL;setPadding(dp(14),dp(10),dp(14),dp(22));background=fade(true)}
+        val brand=column().apply{addView(label("PMDDcam",20f,Color.WHITE,true));status=label("FOTO  ·  ${Styles.get(defaults().style).name}",10f,accent).apply{maxLines=2};addView(status)}
+        top.addView(brand,LinearLayout.LayoutParams(0,-2,1f))
+        top.addView(iconButton("photos","Sammlung öffnen"){showLibrary()})
+        top.addView(iconButton("looks","Aufnahme-Looks"){anchor->popupMenu(anchor,"Aufnahme-Look",listOf(
+            MenuItem("looks","60 Stile","Look für neue Fotos wählen"){defaultStyleDialog()},
+            MenuItem("depth","PMDD-Vorgaben","Tiefe und Bewegung einstellen"){settingsDialog(defaults(),true)}))})
+        top.addView(iconButton("settings","Kamera-Einstellungen"){anchor->popupMenu(anchor,"Kamera",listOf(
+            MenuItem("flash","Blitz: ${flashName()}","Aus · Auto · An"){flash=(flash+1)%3;capture?.flashMode=flash;setStatus("Blitz: ${flashName()}")},
+            MenuItem("timer","Timer: ${timer}s","Aus · 3 Sekunden · 10 Sekunden"){timer=when(timer){0->3;3->10;else->0};setStatus("Timer: ${timer}s")},
+            MenuItem("grid","Raster ${if(grid)"an" else "aus"}","Drittellinien ein-/ausblenden"){grid=!grid;guide.invalidate()},
+            MenuItem("export","Projekt öffnen","Gesichertes PMDD-Projekt laden"){pickProject.launch(arrayOf("application/zip","application/octet-stream"))},
+            MenuItem("info","Über PMDDcam","Hilfe und Informationen"){about()}))})
+        overlay.addView(top,FrameLayout.LayoutParams(-1,-2,Gravity.TOP))
+        val bottom=column().apply{gravity=Gravity.CENTER;setPadding(dp(22),dp(30),dp(22),dp(16));background=fade(false)}
+        zoomChip=button("1.0×"){val z=camera?.cameraInfo?.zoomState?.value;setCameraZoom(if((z?.zoomRatio?:1f)<1.9f)2f else 1f)}.apply{minWidth=dp(64);minimumWidth=dp(64);background=shape(0xc0262e37.toInt(),24f);contentDescription="Kamerazoom"}
+        bottom.addView(zoomChip,LinearLayout.LayoutParams(dp(72),dp(48)).apply{bottomMargin=dp(14)})
+        val shutterRow=row().apply{gravity=Gravity.CENTER_VERTICAL}
+        shutterRow.addView(iconButton("photos","Foto importieren"){pickPhoto.launch(arrayOf("image/*"))},LinearLayout.LayoutParams(dp(56),dp(56)))
+        val shutter=FrameLayout(this).apply{contentDescription="Foto aufnehmen";isClickable=true;isFocusable=true;background=GradientDrawable().apply{shape=GradientDrawable.OVAL;setColor(Color.TRANSPARENT);setStroke(dp(3),Color.WHITE)};setPadding(dp(7),dp(7),dp(7),dp(7));setOnClickListener{takePhoto()}}
+        shutter.addView(View(this).apply{background=GradientDrawable().apply{shape=GradientDrawable.OVAL;setColor(Color.WHITE)}})
+        shutterRow.addView(FrameLayout(this).apply{addView(shutter,FrameLayout.LayoutParams(dp(78),dp(78),Gravity.CENTER))},LinearLayout.LayoutParams(0,dp(82),1f))
+        shutterRow.addView(iconButton("switch","Kamera wechseln"){front=!front;bindCamera(cameraPreview)},LinearLayout.LayoutParams(dp(56),dp(56)))
+        bottom.addView(shutterRow,LinearLayout.LayoutParams(-1,-2));bottom.addView(label("FOTO",10f,accent,true).apply{gravity=Gravity.CENTER;setPadding(0,dp(10),0,0)})
+        overlay.addView(bottom,FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM))
+        val scale=ScaleGestureDetector(this,object:ScaleGestureDetector.SimpleOnScaleGestureListener(){override fun onScale(detector:ScaleGestureDetector):Boolean{setCameraZoom((camera?.cameraInfo?.zoomState?.value?.zoomRatio?:1f)*detector.scaleFactor);return true}})
+        val taps=GestureDetector(this,object:GestureDetector.SimpleOnGestureListener(){
+            override fun onDown(event:MotionEvent)=true
+            override fun onSingleTapUp(event:MotionEvent):Boolean{val point=cameraPreview.meteringPointFactory.createPoint(event.x,event.y);camera?.cameraControl?.startFocusAndMetering(FocusMeteringAction.Builder(point).build());cameraPreview.performClick();return true}
+        })
+        cameraPreview.setOnTouchListener{_,event->scale.onTouchEvent(event);if(!scale.isInProgress)taps.onTouchEvent(event);true}
+        cameraPreview.post{if(page=="camera"&&preview===cameraPreview)requireCamera{bindCamera(cameraPreview)}}
     }
-    private fun itLabel(row:LinearLayout,i:Int)=row.getChildAt(i) as Button
+    private fun setCameraZoom(value:Float){val state=camera?.cameraInfo?.zoomState?.value?:return;val ratio=value.coerceIn(state.minZoomRatio,minOf(8f,state.maxZoomRatio));camera?.cameraControl?.setZoomRatio(ratio);zoomChip?.text="%.1f×".format(ratio)}
+    private fun defaultStyleDialog(){
+        val groups=Styles.all.map{it.group}.distinct()
+        AlertDialog.Builder(this).setTitle("Look für neue Fotos").setItems(groups.toTypedArray()){_,i->
+            val styles=Styles.all.filter{it.group==groups[i]}
+            AlertDialog.Builder(this).setTitle(groups[i]).setSingleChoiceItems(styles.map{it.name}.toTypedArray(),styles.indexOfFirst{it.id==defaults().style}){dialog,which->
+                val r=defaults().apply{style=styles[which].id};prefs.edit().putString("defaults",r.json().toString()).apply();setStatus("FOTO  ·  ${styles[which].name}");dialog.dismiss()
+            }.setNegativeButton("Schließen",null).show()
+        }.setNegativeButton("Schließen",null).show()
+    }
     private fun flashName()=when(flash){ImageCapture.FLASH_MODE_AUTO->"Auto";ImageCapture.FLASH_MODE_ON->"An";else->"Aus"}
     private fun bindCamera(view:PreviewView){
         if(page!="camera")return
@@ -167,8 +206,10 @@ class MainActivity:ComponentActivity(),SensorEventListener {
                 require(p.hasCamera(selector)){"Diese Kamera ist nicht verfügbar. Mit „Wechsel“ die andere Kamera wählen."}
                 val live=Preview.Builder().build().also{it.setSurfaceProvider(view.surfaceProvider)}
                 val cap=ImageCapture.Builder().setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY).setFlashMode(flash).build();capture=cap
-                camera=p.bindToLifecycle(this,selector,live,cap)
-                view.setOnTouchListener{_,event->if(event.action==MotionEvent.ACTION_UP){val point=view.meteringPointFactory.createPoint(event.x,event.y);camera?.cameraControl?.startFocusAndMetering(FocusMeteringAction.Builder(point).build());view.performClick()};true}
+                val group=UseCaseGroup.Builder().addUseCase(live).addUseCase(cap)
+                view.viewPort?.let{group.setViewPort(it)}
+                camera=p.bindToLifecycle(this,selector,group.build())
+                setCameraZoom(1f)
             }catch(e:Exception){setStatus(e.message?:"Kamera konnte nicht gestartet werden.")}
         },ContextCompat.getMainExecutor(this))
     }
@@ -204,27 +245,50 @@ class MainActivity:ComponentActivity(),SensorEventListener {
     }
     private fun buildEditor(){
         val p=project?:return
-        content.removeAllViews();dock.removeAllViews();originalShown=false
-        val layout=column().apply{setPadding(dp(14),0,dp(14),0)}
-        val info=row().apply{gravity=Gravity.CENTER_VERTICAL}
-        info.addView(label("DEIN TIEFENSTUDIO",11f,accent,true),LinearLayout.LayoutParams(0,-2,1f))
-        info.addView(button("↶"){undoEdit()});info.addView(button("↷"){redoEdit()});layout.addView(info)
-        val stage=FrameLayout(this).apply{background=shape(surfaceColor,20f);clipToOutline=true}
-        viewer=DepthViewer(this);stage.addView(viewer,FrameLayout.LayoutParams(-1,-1))
-        layout.addView(stage,LinearLayout.LayoutParams(-1,0,1f).apply{topMargin=dp(8);bottomMargin=dp(12)})
-        val compare=row()
-        compare.addView(button("Original / PMDD"){originalShown=!originalShown;showCurrentImage()},LinearLayout.LayoutParams(0,dp(48),1f))
-        compare.addView(button("Betrachtermodus"){viewerDialog()},LinearLayout.LayoutParams(0,dp(48),1f));layout.addView(compare)
-        styleCaption=label("${Styles.get(p.recipe.style).name}  ·  Original dauerhaft im Projekt",12f,muted).apply{setPadding(dp(4),dp(10),0,dp(8))}
-        layout.addView(styleCaption)
-        content.addView(layout,FrameLayout.LayoutParams(-1,-1))
-        nav("Kamera"){showCamera()};nav("Stile · 60"){stylesDialog()};nav("PMDD"){project?.recipe?.copy()?.let{settingsDialog(it)}};nav("Objekte"){objectsDialog()};nav("Tiefe malen"){paintDepth()};nav("Export"){exportDialog()};nav("Sammlung"){showLibrary()}
-        setStatus("${p.recipe.layers} Ebenen · Tiefe ${(p.recipe.depth*100).roundToInt()} % · ${p.objects.count{it.id!=999}} Bereiche")
+        content.removeAllViews();originalShown=false
+        viewer=DepthViewer(this);content.addView(viewer,FrameLayout.LayoutParams(-1,-1))
+        val overlay=newChrome()
+        val top=row().apply{gravity=Gravity.CENTER_VERTICAL;setPadding(dp(10),dp(8),dp(10),dp(25));background=fade(true)}
+        top.addView(iconButton("camera","Zur Kamera"){showCamera()})
+        val info=column().apply{setPadding(dp(10),0,dp(6),0)}
+        styleCaption=label(Styles.get(p.recipe.style).name,14f,Color.WHITE,true).apply{maxLines=1;ellipsize=android.text.TextUtils.TruncateAt.END};info.addView(styleCaption)
+        status=label("",10f,muted).apply{maxLines=2};info.addView(status);top.addView(info,LinearLayout.LayoutParams(0,-2,1f))
+        top.addView(iconButton("undo","Änderung zurück"){undoEdit()});top.addView(iconButton("redo","Änderung wiederholen"){redoEdit()})
+        overlay.addView(top,FrameLayout.LayoutParams(-1,-2,Gravity.TOP))
+        val bottom=column().apply{setPadding(dp(16),dp(28),dp(16),dp(12));background=fade(false)}
+        val direct=row().apply{gravity=Gravity.CENTER_VERTICAL}
+        compareButton=button("Original ↔ PMDD"){originalShown=!originalShown;showCurrentImage()}.apply{contentDescription="Original und PMDD umschalten";textSize=13f;compoundDrawablePadding=dp(8)}
+        compareButton?.setCompoundDrawablesRelative(UiIcon("compare",accent).apply{setBounds(0,0,dp(20),dp(20))},null,null,null)
+        direct.addView(compareButton,LinearLayout.LayoutParams(0,dp(48),1f).apply{marginEnd=dp(10)})
+        direct.addView(iconButton("eye","Betrachtermodus"){viewerDialog()})
+        bottom.addView(direct,LinearLayout.LayoutParams(-1,-2).apply{bottomMargin=dp(10)})
+        val menus=row()
+        menus.addView(menuButton("looks","Looks"){stylesDialog()},LinearLayout.LayoutParams(0,dp(62),1f).apply{marginEnd=dp(6)})
+        menus.addView(menuButton("depth","PMDD"){anchor->popupMenu(anchor,"PMDD",listOf(
+            MenuItem("depth","Tiefe & Ebenen","Tiefe, Licht und räumliche Trennung"){settingsSection(project!!.recipe.copy(),0,false)},
+            MenuItem("looks","Bewegungsillusion","Stärke und feine Bewegungsfelder"){settingsSection(project!!.recipe.copy(),1,false)},
+            MenuItem("settings","Bild & Stilintensität","Farbe, Kontrast und Stilmischung"){settingsSection(project!!.recipe.copy(),2,false)},
+            MenuItem("eye","Betrachtung & Parallaxe","Richtung und Bewegungsstärke"){settingsSection(project!!.recipe.copy(),3,false)},
+            MenuItem("settings","Alle Einstellungen","Vorgaben, Erkennung und Ausgabe"){settingsDialog(project!!.recipe.copy())}))},LinearLayout.LayoutParams(0,dp(62),1f).apply{marginEnd=dp(6)})
+        menus.addView(menuButton("tools","Werkzeuge"){anchor->popupMenu(anchor,"Werkzeuge",listOf(
+            MenuItem("objects","Objekte","Bereiche und Bewegungsrollen"){objectsDialog()},
+            MenuItem("brush","Tiefe malen","Tiefenkarte mit dem Finger korrigieren"){paintDepth()},
+            MenuItem("export","Exportieren","Foto, Original oder Projekt sichern"){exportDialog()},
+            MenuItem("photos","Sammlung","Gespeicherte Projekte bearbeiten"){showLibrary()},
+            MenuItem("info","Hilfe & Infos","Über PMDDcam"){about()}))},LinearLayout.LayoutParams(0,dp(62),1f))
+        bottom.addView(menus);overlay.addView(bottom,FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM))
+        updateImageChrome()
+    }
+    private fun updateImageChrome(){
+        val p=project?:return
+        compareButton?.apply{isSelected=originalShown;background=ripple(if(originalShown)0xff284d47.toInt() else surfaceColor,24f);ViewCompat.setStateDescription(this,if(originalShown)"Original angezeigt" else "PMDD angezeigt")}
+        styleCaption?.text=if(originalShown)"Original" else Styles.get(p.recipe.style).name
+        setStatus(if(originalShown)"Unverändert · tippen für PMDD" else "${p.recipe.layers} Ebenen · Tiefe ${(p.recipe.depth*100).roundToInt()} %")
     }
     private fun snapshot(){val p=project?:return;val d=depth?:return;undo.addLast(p.snapshot() to d.copy());if(undo.size>20)undo.removeFirst();redo.clear()}
     private fun undoEdit(){if(undo.isEmpty())return;redo.addLast(project!!.snapshot() to depth!!.copy());restoreEdit(undo.removeLast())}
     private fun redoEdit(){if(redo.isEmpty())return;undo.addLast(project!!.snapshot() to depth!!.copy());restoreEdit(redo.removeLast())}
-    private fun restoreEdit(state:Pair<Project,DepthMap>){project=state.first;depth=state.second;persist();scheduleRender()}
+    private fun restoreEdit(state:Pair<Project,DepthMap>){project=state.first;depth=state.second;originalShown=false;persist();scheduleRender()}
     private fun persist(){project?.let{store.save(it);depth?.let{d->store.saveDepth(it.id,d)}}}
     private fun changed(){persist();originalShown=false;scheduleRender()}
     private fun scheduleRender(){
@@ -236,19 +300,25 @@ class MainActivity:ComponentActivity(),SensorEventListener {
         val next=withContext(Dispatchers.Default){PmddRenderer.render(src,d,p)}
         currentCoroutineContext().ensureActive()
         result?.image?.recycle();result=next
-        styleCaption?.text="${Styles.get(p.recipe.style).name}  ·  Original dauerhaft im Projekt"
+        styleCaption?.text=Styles.get(p.recipe.style).name
         showCurrentImage()
         withContext(Dispatchers.IO){store.thumbnail(p.id,next.image)}
-        setStatus(if(analysisNote.isNotBlank())analysisNote else "${p.recipe.layers} Ebenen · Tiefe ${(p.recipe.depth*100).roundToInt()} % · ${Styles.get(p.recipe.style).name}")
+        if(analysisNote.isNotBlank())setStatus(analysisNote)
     }
     private fun showCurrentImage(){
         val r=result?:return;val p=project?:return
         viewer?.setImage(if(originalShown)source?:r.image else r.image,r.depth,p.recipe)
-        if(originalShown){viewer?.active=false;stopTracking();setStatus("Unverändertes Original · erneut tippen für PMDD")}
+        if(originalShown){viewer?.active=false;viewer?.center();stopTracking()}
+        updateImageChrome()
     }
     private fun showLibrary(){
-        clearPage();page="library";setStatus("Originale, Tiefenkarten und Einstellungen bleiben bearbeitbar.")
-        val list=column().apply{setPadding(dp(16),0,dp(16),dp(20))};content.addView(scroll(list));nav("Kamera"){showCamera()};nav("Foto importieren"){pickPhoto.launch(arrayOf("image/*"))};nav("Projekt öffnen"){pickProject.launch(arrayOf("application/zip","application/octet-stream"))}
+        clearPage();page="library"
+        val overlay=newChrome();val layout=column()
+        val header=row().apply{gravity=Gravity.CENTER_VERTICAL;setPadding(dp(10),dp(10),dp(10),dp(14))}
+        header.addView(iconButton("back","Zur Kamera"){showCamera()});header.addView(label("Sammlung",22f,Color.WHITE,true),LinearLayout.LayoutParams(0,-2,1f))
+        header.addView(iconButton("photos","Foto importieren"){pickPhoto.launch(arrayOf("image/*"))});header.addView(iconButton("export","Projekt öffnen"){pickProject.launch(arrayOf("application/zip","application/octet-stream"))});layout.addView(header)
+        val list=column().apply{setPadding(dp(16),0,dp(16),dp(20))};layout.addView(scroll(list),LinearLayout.LayoutParams(-1,0,1f));overlay.addView(layout)
+        status=label("")
         lifecycleScope.launch {
             val projects=withContext(Dispatchers.IO){store.list()}
             if(page!="library")return@launch
@@ -270,7 +340,7 @@ class MainActivity:ComponentActivity(),SensorEventListener {
         AlertDialog.Builder(this).setTitle(if(defaultsOnly)"Aufnahme-Vorgaben" else "PMDD-Einstellungen").setItems(choice){_,which->
             val r=initial.copy()
             when(which){
-                5->{r.layers=96;r.depth=1.1f;r.separation=.9f;r.motionAmount=.5f;applyRecipe(r,defaultsOnly)}
+                5->{r.layers=96;r.depth=1.85f;r.separation=.9f;r.motionAmount=1.2f;r.parallax=1.25f;r.relief=.7f;applyRecipe(r,defaultsOnly)}
                 6->{r.layers=48;r.depth=.55f;r.separation=.45f;r.motionAmount=.18f;r.haze=.14f;applyRecipe(r,defaultsOnly)}
                 7->{prefs.edit().putString("defaults",r.json().toString()).apply();message("Vorgaben für neue Aufnahmen gespeichert.")}
                 else->settingsSection(r,which,defaultsOnly)
@@ -280,10 +350,10 @@ class MainActivity:ComponentActivity(),SensorEventListener {
     private fun settingsSection(r:Recipe,group:Int,defaultsOnly:Boolean){
         val body=column().apply{setPadding(dp(16),0,dp(16),dp(12))}
         when(group){
-            0->{slider(body,"Tiefenebenen",r.layers.toFloat(),8f,128f){r.layers=it.roundToInt()};slider(body,"3D-Tiefe",r.depth,0f,1.5f){r.depth=it};slider(body,"Ebenentrennung",r.separation){r.separation=it};slider(body,"Fokusebene · fern → nah",r.focus){r.focus=it};slider(body,"Plastisches Licht",r.relief){r.relief=it};slider(body,"Atmosphärische Ferne",r.haze){r.haze=it};slider(body,"Tiefenunschärfe",r.bokeh){r.bokeh=it};slider(body,"Kontaktschatten",r.occlusion){r.occlusion=it};check(body,"Tiefenrichtung umkehren",r.invertDepth){r.invertDepth=it}}
-            1->{body.addView(label("Statische Mikro-Kontraste erzeugen Wahrnehmungshinweise. Die Stärke der Illusion hängt auch vom Motiv, Display und Blick ab.",13f,muted));check(body,"Bewegungsillusion aktiv",r.motion){r.motion=it};slider(body,"Illusionsstärke",r.motionAmount){r.motionAmount=it};slider(body,"Texturfrequenz",r.motionScale){r.motionScale=it};slider(body,"Peripherie betonen",r.peripheral){r.peripheral=it};slider(body,"Bewegung an Tiefe koppeln",r.depthCoupling){r.depthCoupling=it};check(body,"Stabile Anker schützen",r.lockAnchors){r.lockAnchors=it};check(body,"Erkannte Gesichter schützen",r.protectFaces){r.protectFaces=it}}
+            0->{slider(body,"Tiefenebenen",r.layers.toFloat(),8f,128f){r.layers=it.roundToInt()};slider(body,"3D-Tiefe",r.depth,0f,2.5f){r.depth=it};slider(body,"Ebenentrennung",r.separation){r.separation=it};slider(body,"Fokusebene · fern → nah",r.focus){r.focus=it};slider(body,"Plastisches Licht",r.relief){r.relief=it};slider(body,"Atmosphärische Ferne",r.haze){r.haze=it};slider(body,"Tiefenunschärfe",r.bokeh){r.bokeh=it};slider(body,"Schattenzeichnung",r.occlusion){r.occlusion=it};check(body,"Tiefenrichtung umkehren",r.invertDepth){r.invertDepth=it}}
+            1->{body.addView(label("Statische Mikro-Kontraste erzeugen Wahrnehmungshinweise. Die Stärke der Illusion hängt auch vom Motiv, Display und Blick ab.",13f,muted));check(body,"Bewegungsillusion aktiv",r.motion){r.motion=it};slider(body,"Illusionsstärke",r.motionAmount,0f,2f){r.motionAmount=it};slider(body,"Texturfrequenz",r.motionScale){r.motionScale=it};slider(body,"Peripherie betonen",r.peripheral){r.peripheral=it};slider(body,"Bewegung an Tiefe koppeln",r.depthCoupling){r.depthCoupling=it};check(body,"Stabile Anker schützen",r.lockAnchors){r.lockAnchors=it};check(body,"Erkannte Gesichter schützen",r.protectFaces){r.protectFaces=it}}
             2->{slider(body,"Stilmischung",r.styleMix){r.styleMix=it};slider(body,"Lokale Schärfe",r.sharpness){r.sharpness=it};slider(body,"Mikrotextur",r.texture){r.texture=it};slider(body,"Belichtung",r.exposure,-1f,1f){r.exposure=it};slider(body,"Kontrast",r.contrast,-.5f,.8f){r.contrast=it};slider(body,"Sättigung",r.saturation,0f,2f){r.saturation=it};slider(body,"Vignette",r.vignette){r.vignette=it}}
-            3->{check(body,"Links / rechts",r.horizontal){r.horizontal=it};check(body,"Oben / unten",r.vertical){r.vertical=it};check(body,"Näher / weiter",r.distance){r.distance=it};slider(body,"Interaktive Parallaxe",r.parallax){r.parallax=it};slider(body,"Betrachtungsabstand · cm",r.viewDistance,20f,150f){r.viewDistance=it};slider(body,"Bildbreite · cm",r.screenSize,8f,100f){r.screenSize=it};body.addView(label("Für die reale Bewegungserkennung den Betrachtermodus mit Kopfsteuerung einschalten. Ein PNG bleibt statisch.",13f,muted))}
+            3->{check(body,"Links / rechts",r.horizontal){r.horizontal=it};check(body,"Oben / unten",r.vertical){r.vertical=it};check(body,"Näher / weiter",r.distance){r.distance=it};slider(body,"Interaktive Parallaxe",r.parallax,0f,2f){r.parallax=it};slider(body,"Betrachtungsabstand · cm",r.viewDistance,20f,150f){r.viewDistance=it};slider(body,"Bildbreite · cm",r.screenSize,8f,100f){r.screenSize=it};body.addView(label("Für die reale Bewegungserkennung den Betrachtermodus mit Kopfsteuerung einschalten. Ein PNG bleibt statisch.",13f,muted))}
             4->{check(body,"Objekte und Gesichter automatisch erkennen",r.detectObjects){r.detectObjects=it};body.addView(label("Wirkt bei neuen Aufnahmen bzw. „Neu analysieren“. Vorhandene Objektrollen bleiben beim Bearbeiten erhalten.",12f,muted));slider(body,"Export · längste Kante",r.outputSize.toFloat(),1024f,4096f){r.outputSize=it.roundToInt()};body.addView(label("Originale behalten ihre volle Auflösung. Die Ausgabe wird zum Schutz vor Speicherabbruch an den Gerätespeicher angepasst.",13f,muted))}
         }
         val dialog=AlertDialog.Builder(this).setTitle(arrayOf("Tiefe & Ebenen","Bewegungsillusion","Bildgestaltung","Betrachtung","Erkennung & Ausgabe")[group]).setView(scroll(body)).setPositiveButton("Übernehmen"){_,_->applyRecipe(r,defaultsOnly)}.setNegativeButton("Abbrechen",null).create();showDialog(dialog)
@@ -433,7 +503,7 @@ class MainActivity:ComponentActivity(),SensorEventListener {
         }
     }
     private fun about(){
-        AlertDialog.Builder(this).setTitle("PMDDcam · 0.1.2").setMessage("Fotografiere einen tieferen Raum.\n\nPMDD 4.0 — Perceptual Motion & Depth Design\nKonzept: Kolja Werner Schumann · kosch.cloud\nHuman-AI-Co-Design mit ChatGPT.\n\nDie Fotoverarbeitung und Erkennung laufen auf deinem Gerät. Originale werden getrennt von Effekten gespeichert. Zum Sichern außerhalb der App ein PMDD-Projekt exportieren.\n\nStatische PMDD-Illusionen und interaktive 2.5D-Parallaxe sind getrennte Modi. Tiefen werden aus einem Foto geschätzt; verdeckte Rückseiten kann das Foto nicht zeigen. Die 60 Stile sind lokale Bildverfahren.\n\nMiDaS v2.1 und SSD-MobileNet (MIT), ONNX Runtime (MIT), AndroidX (Apache 2.0), Google ML Kit.\n\n${assets.open("THIRD_PARTY.txt").bufferedReader().use{it.readText()}}")
+        AlertDialog.Builder(this).setTitle("PMDDcam · 0.2.0").setMessage("Fotografiere einen tieferen Raum.\n\nPMDD 4.0 — Perceptual Motion & Depth Design\nKonzept: Kolja Werner Schumann · kosch.cloud\nHuman-AI-Co-Design mit ChatGPT.\n\nDie Fotoverarbeitung und Erkennung laufen auf deinem Gerät. Originale werden getrennt von Effekten gespeichert. Zum Sichern außerhalb der App ein PMDD-Projekt exportieren.\n\nStatische PMDD-Illusionen und interaktive 2.5D-Parallaxe sind getrennte Modi. Tiefen werden aus einem Foto geschätzt; verdeckte Rückseiten kann das Foto nicht zeigen. Die 60 Stile sind lokale Bildverfahren.\n\nMiDaS v2.1 und SSD-MobileNet (MIT), ONNX Runtime (MIT), AndroidX (Apache 2.0), Google ML Kit.\n\n${assets.open("THIRD_PARTY.txt").bufferedReader().use{it.readText()}}")
             .setPositiveButton("Schließen",null).setNeutralButton("PMDD-Geschichte"){_,_->startActivity(Intent(Intent.ACTION_VIEW,Uri.parse("https://kosch.cloud/blog/pmdd---die-magie-hinter-der-illusion--wie-wahrnehmung-und-ki-zu-lebendigen-bildern-verschmelzen")))}.setNegativeButton("GitHub"){_,_->startActivity(Intent(Intent.ACTION_VIEW,Uri.parse("https://github.com/chekento/PMDDcam")))}.show()
     }
 
@@ -442,7 +512,35 @@ class MainActivity:ComponentActivity(),SensorEventListener {
     private fun label(text:String,size:Float=14f,color:Int=Color.WHITE,bold:Boolean=false)=TextView(this).apply{this.text=text;textSize=size;setTextColor(color);if(bold)setTypeface(typeface,Typeface.BOLD);setLineSpacing(dp(3).toFloat(),1f)}
     private fun button(text:String,primary:Boolean=false,action:()->Unit)=Button(this).apply{
         this.text=text;isAllCaps=false;textSize=13f;minHeight=dp(48);minimumHeight=dp(48);setPadding(dp(14),dp(8),dp(14),dp(8));setTextColor(if(primary)backgroundColor else Color.WHITE)
-        background=shape(if(primary)accent else surfaceColor,16f);stateListAnimator=null;setOnClickListener{if(busy.visibility!=View.VISIBLE)action()}
+        background=ripple(if(primary)accent else surfaceColor,16f);stateListAnimator=null;setOnClickListener{if(busy.visibility!=View.VISIBLE)action()}
+    }
+    private data class MenuItem(val icon:String,val title:String,val subtitle:String,val action:()->Unit)
+    private fun iconButton(icon:String,title:String,action:(View)->Unit)=ImageButton(this).apply{
+        setImageDrawable(UiIcon(icon));contentDescription=title;tooltipText=title;setPadding(dp(13),dp(13),dp(13),dp(13));background=ripple(0xa617202e.toInt(),24f)
+        layoutParams=LinearLayout.LayoutParams(dp(48),dp(48)).apply{marginStart=dp(3)};setOnClickListener{if(busy.visibility!=View.VISIBLE)action(it)}
+    }
+    private fun menuButton(icon:String,title:String,action:(View)->Unit)=Button(this).apply{
+        text=title;textSize=11f;isAllCaps=false;setTextColor(Color.WHITE);setPadding(dp(8),dp(8),dp(8),dp(6));minWidth=0;minimumWidth=0;compoundDrawablePadding=dp(4)
+        setCompoundDrawables(null,UiIcon(icon,accent).apply{setBounds(0,0,dp(22),dp(22))},null,null);background=ripple(0xe617202e.toInt(),20f);setOnClickListener{if(busy.visibility!=View.VISIBLE)action(it)}
+    }
+    private fun fade(top:Boolean)=GradientDrawable(if(top)GradientDrawable.Orientation.TOP_BOTTOM else GradientDrawable.Orientation.BOTTOM_TOP,intArrayOf(0xf5091018.toInt(),0xb0091018.toInt(),Color.TRANSPARENT))
+    private fun ripple(color:Int,radius:Float)=RippleDrawable(ColorStateList.valueOf(0x3386f1d1),shape(color,radius),null)
+    private fun popupMenu(anchor:View,title:String,items:List<MenuItem>){
+        popup?.dismiss()
+        val panel=column().apply{setPadding(dp(8),dp(8),dp(8),dp(8))}
+        panel.addView(label(title.uppercase(Locale.GERMAN),10f,accent,true).apply{setPadding(dp(14),dp(8),dp(14),dp(10))})
+        val menu=PopupWindow(panel,minOf(dp(320),root.width-dp(32)),-2,true).apply{setBackgroundDrawable(shape(0xff182330.toInt(),24f));elevation=dp(18).toFloat();isOutsideTouchable=true;inputMethodMode=PopupWindow.INPUT_METHOD_NOT_NEEDED}
+        items.forEach{item->
+            val entry=row().apply{gravity=Gravity.CENTER_VERTICAL;setPadding(dp(12),dp(10),dp(12),dp(10));minimumHeight=dp(58);background=ripple(Color.TRANSPARENT,16f);isFocusable=true;contentDescription=item.title}
+            entry.addView(ImageView(this).apply{setImageDrawable(UiIcon(item.icon,accent))},LinearLayout.LayoutParams(dp(23),dp(23)))
+            entry.addView(column().apply{setPadding(dp(14),0,0,0);addView(label(item.title,14f,Color.WHITE,true));addView(label(item.subtitle,11f,muted))},LinearLayout.LayoutParams(0,-2,1f))
+            entry.setOnClickListener{menu.dismiss();item.action()};panel.addView(entry,LinearLayout.LayoutParams(-1,-2))
+        }
+        val maxHeight=root.height-safeTop-safeBottom-dp(24)
+        panel.measure(View.MeasureSpec.makeMeasureSpec(menu.width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(maxHeight,View.MeasureSpec.AT_MOST))
+        val where=IntArray(2);anchor.getLocationInWindow(where)
+        val y=if(where[1]>root.height/2)where[1]-panel.measuredHeight-dp(10) else where[1]+anchor.height+dp(8)
+        popup=menu;menu.showAtLocation(root,Gravity.TOP or Gravity.START,(where[0]+anchor.width-menu.width).coerceIn(dp(16),maxOf(dp(16),root.width-menu.width-dp(16))),y.coerceIn(safeTop+dp(4),maxOf(safeTop+dp(4),root.height-safeBottom-panel.measuredHeight-dp(4))))
     }
     private fun shape(color:Int,radius:Float)=GradientDrawable().apply{setColor(color);cornerRadius=dp(radius).toFloat()}
     private fun dp(value:Int)=(value*resources.displayMetrics.density).roundToInt()
@@ -453,13 +551,15 @@ class MainActivity:ComponentActivity(),SensorEventListener {
         body.addView(SeekBar(this).apply{this.max=1000;progress=((value-min)/(max-min)*1000).roundToInt().coerceIn(0,1000);progressTintList=ColorStateList.valueOf(accent);thumbTintList=ColorStateList.valueOf(accent);contentDescription=name;minimumHeight=dp(48)
             setOnSeekBarChangeListener(seek{fraction->val current=min+(max-min)*fraction;title.text="$name · ${format(current,max)}";onChange(current)})})
     }
-    private fun format(value:Float,max:Float)=if(max>2)"${value.roundToInt()}" else "${(value*100).roundToInt()} %"
+    private fun format(value:Float,max:Float)=if(max>=8)"${value.roundToInt()}" else "${(value*100).roundToInt()} %"
     private fun seek(callback:(Float)->Unit)=object:SeekBar.OnSeekBarChangeListener{override fun onStartTrackingTouch(s:SeekBar?){};override fun onStopTrackingTouch(s:SeekBar?){};override fun onProgressChanged(s:SeekBar?,progress:Int,user:Boolean){if(user)callback(progress.toFloat()/(s?.max?:100))}}
     private fun check(body:LinearLayout,text:String,value:Boolean,change:(Boolean)->Unit){body.addView(CheckBox(this).apply{this.text=text;isChecked=value;setTextColor(Color.WHITE);minHeight=dp(48);buttonTintList=ColorStateList.valueOf(accent);setOnCheckedChangeListener{_,checked->change(checked)}})}
     private fun choose(body:LinearLayout,title:String,values:List<String>,selected:Int,change:(Int)->Unit){body.addView(label(title,13f,muted).apply{setPadding(0,dp(12),0,0)});body.addView(Spinner(this).apply{adapter=ArrayAdapter(this@MainActivity,android.R.layout.simple_spinner_dropdown_item,values);setSelection(selected);minimumHeight=dp(48);onItemSelectedListener=object:AdapterView.OnItemSelectedListener{override fun onNothingSelected(p:AdapterView<*>?){};override fun onItemSelected(p:AdapterView<*>?,v:View?,position:Int,id:Long){change(position)}}})}
-    private fun showDialog(dialog:AlertDialog,height:Float=.78f){dialog.show();dialog.window?.setLayout((resources.displayMetrics.widthPixels*.96f).toInt(),(resources.displayMetrics.heightPixels*height).toInt());dialog.window?.setBackgroundDrawable(shape(backgroundColor,22f))}
+    private fun showDialog(dialog:AlertDialog,height:Float=.78f){
+        dialog.show();dialog.window?.apply{setLayout(minOf(dp(560),(resources.displayMetrics.widthPixels*.98f).toInt()),(resources.displayMetrics.heightPixels*height).toInt());setGravity(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL);setBackgroundDrawable(shape(backgroundColor,26f));addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);setDimAmount(.4f)}
+    }
     private fun message(text:String){if(!isFinishing)AlertDialog.Builder(this).setMessage(text).setPositiveButton("OK",null).show()}
-    override fun onPause(){stopTracking();viewer?.onPause();super.onPause()}
-    override fun onResume(){super.onResume();viewer?.onResume()}
+    override fun onPause(){popup?.dismiss();stopTracking();viewer?.onPause();super.onPause()}
+    override fun onResume(){super.onResume();immersive();viewer?.onResume()}
     override fun onDestroy(){rendering?.cancel();task?.cancel();stopTracking();viewer?.release();provider?.unbindAll();super.onDestroy()}
 }

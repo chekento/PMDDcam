@@ -1,5 +1,15 @@
 # Änderungen
 
+## 0.2.0 · 29.09.2026 · Fullscreen & Clean Depth
+
+- Vollbildkamera mit abgestimmtem Vorschau-/Aufnahmeausschnitt, Pinch-Zoom und kompakten Symbolmenüs.
+- Bildbetonte Bearbeitungsansicht mit drei Menüs: Looks, PMDD und Werkzeuge; lesbare Pop-ups und kompakte Dialoge.
+- **Original ↔ PMDD** bleibt als eigener Umschalter auf dem Hauptschirm; aktueller Zustand wird markiert.
+- Kontinuierliche Tiefenwerte und bildgeführte Interpolation ersetzen Stufen-/Reliefschatten an Tiefenkanten. Keine großflächigen periodischen Atmosphärenmuster; Licht und Bewegung verwenden vorhandene Bildstruktur.
+- Tiefe bis 250 %, Bewegung und interaktive Parallaxe bis 200 %; stärkeres Intensiv-Preset und interpolierte Viewer-Abtastung.
+- 60 FX-Rezepte überarbeitet: weichere Illustration, Pigment-/Papierdetails, differenzierte Filmtönung, Duotonpaletten, Neon, Pixel- und Druckstile. Stilmischung 0 schaltet nun auch Pixeleffekte vollständig ab.
+- Regressionen für Muster auf glatten Flächen, Reglerwirkung, Stilmischung und kontinuierliche Tiefe; Gerätetests für Vollbild, Vergleichsbutton, Pop-ups und Originalerhalt.
+
 ## 0.1.2 · 29.09.2026 · Android Preview
 
 - Dynamisch geladene Objekterkennung durch fest eingebautes SSD-MobileNet mit 80 Klassen ersetzen.

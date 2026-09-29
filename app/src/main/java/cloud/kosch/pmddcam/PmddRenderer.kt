@@ -15,24 +15,21 @@ object MotionMath {
         val w=(o.right-o.left).coerceAtLeast(.001f);val h=(o.bottom-o.top).coerceAtLeast(.001f)
         val x=(u-o.left)/w;val y=(v-o.top)/h
         if(x !in 0f..1f || y !in 0f..1f)return 0f
-        val edge=smooth(0f,.12f,min(min(x,1-x),min(y,1-y)))
-        if(o.face)return edge
-        // Depth-compatible membership, feathered boundaries. This is a soft region,
-        // not a claimed semantic segmentation mask for every possible object.
+        val edge=smooth(0f,.16f,min(min(x,1-x),min(y,1-y)))
+        if(o.face || o.overrideDepth)return edge
         return edge*(1-smooth(.18f,.5f,abs(d-o.depth)))
     }
     fun wave(phase:Float):Float {
-        val f=phase-floor(phase)
-        // Static asymmetric luminance sequence; no time uniform or frame changes.
-        return when {f<.22f->-1f;f<.5f->-.28f;f<.72f->1f;else->.35f}
+        // Continuous, zero-mean asymmetry: no hard luminance steps or stripe edges.
+        val a=(phase-floor(phase))*2f*PI.toFloat()
+        return -sin(a)*.78f-sin(2*a+.65f)*.22f
     }
-    fun signal(o:SceneObject,u:Float,v:Float,scale:Float):Float {
-        val x=(u-(o.left+o.right)/2);val y=(v-(o.top+o.bottom)/2)
+    fun signal(o:SceneObject,u:Float,v:Float,scale:Float,samplingEdge:Float=1024f):Float {
+        val x=u-(o.left+o.right)/2;val y=v-(o.top+o.bottom)/2
         val angle=o.angle*PI.toFloat()/180
-        val frequency=18f+scale*72f+o.speed*30f
-        val along=x*cos(angle)+y*sin(angle)
-        val radius=sqrt(x*x+y*y)
-        val primary=when(o.motion) {
+        val frequency=min(18f+scale*50f+o.speed*22f,max(2f,samplingEdge/8f))
+        val along=x*cos(angle)+y*sin(angle);val radius=sqrt(x*x+y*y)
+        val phase=when(o.motion) {
             Motion.APPROACH -> -radius*frequency
             Motion.RETREAT -> radius*frequency
             Motion.ROTATE -> atan2(y,x)*frequency*.13f+radius*frequency*.15f
@@ -40,9 +37,7 @@ object MotionMath {
             Motion.FLOW -> along*frequency+sin((x*sin(angle)-y*cos(angle))*25)*.7f
             Motion.DRIFT -> along*frequency
         }
-        // Secondary detail and trailing energy share the primary direction.
-        val secondary=wave(primary*.51f+.18f)*.17f
-        return wave(primary)*.83f+secondary
+        return wave(phase)*.83f+wave(phase*.51f+.18f)*.17f
     }
 }
 
@@ -51,93 +46,159 @@ data class RenderResult(val image:Bitmap,val depth:DepthMap)
 object PmddRenderer {
     suspend fun render(source:Bitmap,raw:DepthMap,project:Project):RenderResult {
         val r=project.recipe.normalized();val style=Styles.get(r.style)
-        val styleSaturation=if(style.id=="matrix"||style.id=="gameboy"||style.id=="blueprint")1f else style.saturation
-        val width=source.width;val height=source.height
+        val width=source.width;val height=source.height;val shortEdge=min(width,height)
         val pixels=IntArray(width*height);source.getPixels(pixels,0,width,0,0,width,height)
+        // A real low-pass filter replaces the coarse downsample/upsample halo source.
+        val soft=boxBlur(pixels,width,height,max(1,shortEdge/140))
         val output=IntArray(pixels.size)
-        val blurSmall=Bitmap.createScaledBitmap(source,max(1,width/24),max(1,height/24),true)
-        val blur=Bitmap.createScaledBitmap(blurSmall,width,height,true)
-        if(blurSmall!==blur)blurSmall.recycle()
-        val soft=IntArray(pixels.size);blur.getPixels(soft,0,width,0,0,width,height);if(blur!==source)blur.recycle()
         val depth=effectiveDepth(raw,project)
+        val guide=GuidedDepth(source,depth)
         val objects=project.objects.filter{it.enabled}
         val context=currentCoroutineContext()
         val invW=1f/width;val invH=1f/height
+        val detailStep=max(1,shortEdge/420)
+        val gain=r.depth*(.8f+.65f*r.depth)
+        val geometry=(r.screenSize/16f*45f/r.viewDistance).coerceIn(.4f,2f)
+        val pixelSize=max(1,shortEdge/if(style.id=="pixel16")180 else 100)
+        val printCell=max(2.5f,shortEdge/75f)
+        val styleSaturation=if(style.id=="matrix"||style.id=="gameboy"||style.id=="blueprint")1f else style.saturation
+        val pocketPalette=intArrayOf(0xff162b18.toInt(),0xff385c31.toInt(),0xff85a34b.toInt(),0xffd9e995.toInt())
         for(y in 0 until height){
             if(y%16==0)context.ensureActive()
             val v=(y+.5f)*invH
             for(x in 0 until width){
-                val u=(x+.5f)*invW;val index=y*width+x
-                var src=pixels[index]
-                if(style.technique==Technique.PIXEL){
-                    val size=max(2,width/140);src=pixels[(y/size*size)*width+(x/size*size)]
-                }
-                val red=((src shr 16)and 255)/255f;val green=((src shr 8)and 255)/255f;val blue=(src and 255)/255f
-                val c=soft[index];val br=((c shr 16)and 255)/255f;val bg=((c shr 8)and 255)/255f;val bb=(c and 255)/255f
-                val gray=red*.2126f+green*.7152f+blue*.0722f
-                val smoothGray=br*.2126f+bg*.7152f+bb*.0722f
-                val left=pixels[y*width+max(0,x-1)];val right=pixels[y*width+min(width-1,x+1)]
-                val up=pixels[max(0,y-1)*width+x];val down=pixels[min(height-1,y+1)*width+x]
-                val edge=(abs(luma(left)-luma(right))+abs(luma(up)-luma(down))).coerceIn(0f,1f)
-                var sr=red;var sg=green;var sb=blue
+                val u=(x+.5f)*invW;val index=y*width+x;val src=pixels[index]
+                val red=channel(src,16);val green=channel(src,8);val blue=channel(src,0)
+                val c=soft[index];val br=channel(c,16);val bg=channel(c,8);val bb=channel(c,0)
+                val gray=luma(src);val smoothGray=luma(c);val detail=gray-smoothGray
+                val gx=luma(soft[y*width+min(width-1,x+detailStep)])-luma(soft[y*width+max(0,x-detailStep)])
+                val gy=luma(soft[min(height-1,y+detailStep)*width+x])-luma(soft[max(0,y-detailStep)*width+x])
+                val edge=(abs(gx)+abs(gy)).coerceIn(0f,1f)
                 val noise=noise(x,y)
+                val paper=noise(x/3,y/3)*.6f+noise(x/11,y/11)*.4f
+                // Range weighting smooths pigment inside surfaces while retaining their outlines.
+                val blend=.76f/(1+abs(detail)*18f)
+                val pr=red+(br-red)*blend;val pg=green+(bg-green)*blend;val pb=blue+(bb-blue)*blend
+                var sr=red;var sg=green;var sb=blue
                 when(style.technique){
                     Technique.PHOTO -> Unit
-                    Technique.COMIC -> {sr=quant(red,style.levels);sg=quant(green,style.levels);sb=quant(blue,style.levels)
-                        val ink=(1-edge*3.4f).coerceIn(.12f,1f);sr*=ink;sg*=ink;sb*=ink}
-                    Technique.WATERCOLOR -> {sr=quant(red*.35f+br*.65f,style.levels)*.86f+.14f;sg=quant(green*.35f+bg*.65f,style.levels)*.86f+.14f;sb=quant(blue*.35f+bb*.65f,style.levels)*.86f+.14f
-                        val pigment=1-edge*.3f+noise*.025f;sr*=pigment;sg*=pigment;sb*=pigment}
-                    Technique.OIL -> {val stroke=sin(x*.7f+y*.25f)*.012f;sr=quant(red*.6f+br*.4f,style.levels)+stroke;sg=quant(green*.6f+bg*.4f,style.levels)+stroke;sb=quant(blue*.6f+bb*.4f,style.levels)+stroke}
-                    Technique.INK -> {val value=(1-edge*5-(1-gray)*.12f).coerceIn(0f,1f)
-                        if(style.id=="blueprint"){sr=.05f+(1-value)*.55f;sg=.14f+(1-value)*.65f;sb=.3f+(1-value)*.68f}else{sr=value;sg=value;sb=value}}
-                    Technique.PENCIL -> {val line=(gray/(smoothGray+.04f)).coerceIn(0f,1f)*(1-edge*.9f)
-                        sr=line*.83f+red*.17f;sg=line*.83f+green*.17f;sb=line*.83f+blue*.17f}
-                    Technique.HATCH -> {val hatch=if((x+y)%7<2 || (gray<.3f&&(x-y+width)%9<2)) .5f else 1f
-                        val value=(gray*.4f+.6f)*if(gray<.75f)hatch else 1f;sr=value;sg=value;sb=value}
-                    Technique.HALFTONE -> {val sx=(x%7-3)/3f;val sy=(y%7-3)/3f;val dot=if(sx*sx+sy*sy<(1-gray)*1.8f).55f else 1.1f
-                        sr=quant(red,style.levels)*dot;sg=quant(green,style.levels)*dot;sb=quant(blue,style.levels)*dot}
-                    Technique.NEON -> {val glow=(edge*2.1f+max(0f,gray-smoothGray)*1.8f).coerceIn(0f,.75f)
-                        sr=red*.72f+((style.tint shr 16)and 255)/255f*glow;sg=green*.72f+((style.tint shr 8)and 255)/255f*glow;sb=blue*.72f+(style.tint and 255)/255f*glow}
-                    Technique.DUOTONE -> {sr=gray*(.25f+((style.tint shr 16)and 255)/255f*.85f);sg=gray*(.25f+((style.tint shr 8)and 255)/255f*.85f);sb=gray*(.25f+(style.tint and 255)/255f*.85f)}
-                    Technique.SOLAR -> {sr=if(red>.55f)1-red else red;sg=if(green>.65f)1-green else green;sb=if(blue>.5f)1-blue else blue;sr*=1.6f;sg*=1.6f;sb*=1.6f}
-                    Technique.PIXEL -> {sr=quant(red,style.levels);sg=quant(green,style.levels);sb=quant(blue,style.levels)
-                        if(style.id=="gameboy"){val q=quant(gray,4);sr=q*.6f;sg=q*.75f;sb=q*.27f}}
+                    Technique.COMIC -> {
+                        val ink=1-MotionMath.smooth(.025f,.19f,edge)*style.ink
+                        sr=softQuant(pr,style.levels)*ink;sg=softQuant(pg,style.levels)*ink;sb=softQuant(pb,style.levels)*ink
+                    }
+                    Technique.WATERCOLOR -> {
+                        val pigment=1-MotionMath.smooth(.018f,.2f,edge)*.16f
+                        val grain=paper*.018f*(1-gray)
+                        sr=softQuant(pr,style.levels)*pigment*.89f+.11f+grain
+                        sg=softQuant(pg,style.levels)*pigment*.89f+.11f+grain
+                        sb=softQuant(pb,style.levels)*pigment*.89f+.11f+grain
+                    }
+                    Technique.OIL -> {
+                        // Stroke variation follows existing detail, never a global sine overlay.
+                        val stroke=paper*abs(detail)*.18f
+                        sr=softQuant(pr,style.levels)+detail*.2f+stroke
+                        sg=softQuant(pg,style.levels)+detail*.2f+stroke
+                        sb=softQuant(pb,style.levels)+detail*.2f+stroke
+                    }
+                    Technique.INK -> {
+                        val line=(MotionMath.smooth(.015f,.17f,edge)*.9f+(1-gray)*.08f).coerceIn(0f,1f)
+                        if(style.id=="blueprint"){sr=.025f+line*.83f;sg=.12f+line*.8f;sb=.28f+line*.7f}
+                        else {sr=1-line;sg=sr;sb=sr}
+                    }
+                    Technique.PENCIL -> {
+                        val line=(1-MotionMath.smooth(.009f,.18f,edge)*.85f-max(0f,-detail)*1.4f-(1-gray)*.1f+noise*.024f*(1-gray)).coerceIn(0f,1f)
+                        val color=if(style.id=="coloredpencil").6f else .06f
+                        sr=line*(1-color)+red*color;sg=line*(1-color)+green*color;sb=line*(1-color)+blue*color
+                    }
+                    Technique.HATCH -> {
+                        val line=1-MotionMath.smooth(.03f,.25f,abs(sin((x+y)/printCell*PI.toFloat())))
+                        val cross=1-MotionMath.smooth(.03f,.25f,abs(sin((x-y)/printCell*PI.toFloat())))
+                        val mark=line*MotionMath.smooth(.2f,.8f,1-gray)+cross*MotionMath.smooth(.65f,.95f,1-gray)
+                        val value=(.96f-mark*.6f-edge*.6f+noise*.015f).coerceIn(0f,1f)
+                        sr=value;sg=value;sb=value
+                    }
+                    Technique.HALFTONE -> {
+                        val cx=(x/printCell-floor(x/printCell))-.5f;val cy=(y/printCell-floor(y/printCell))-.5f
+                        val dot=1-MotionMath.smooth((1-gray)*.32f-.025f,(1-gray)*.32f+.025f,cx*cx+cy*cy)
+                        val ink=1-dot*.58f
+                        sr=softQuant(pr,style.levels)*.72f+.28f;sg=softQuant(pg,style.levels)*.72f+.28f;sb=softQuant(pb,style.levels)*.72f+.28f
+                        sr*=ink;sg*=ink;sb*=ink
+                    }
+                    Technique.NEON -> {
+                        val glow=(MotionMath.smooth(.012f,.22f,edge)*.62f+max(0f,detail)*1.3f).coerceIn(0f,.85f)
+                        val base=if(style.id=="hologram").75f else .56f
+                        if(style.id=="matrix"){sr=gray*.035f;sg=gray*.48f;sb=gray*.09f}
+                        else{sr=red*base;sg=green*base;sb=blue*base}
+                        sr+=channel(style.tint,16)*glow;sg+=channel(style.tint,8)*glow;sb+=channel(style.tint,0)*glow
+                    }
+                    Technique.DUOTONE -> {
+                        val t=gray.pow(.86f)
+                        sr=channel(style.shadow,16)*(1-t)+channel(style.highlight,16)*t
+                        sg=channel(style.shadow,8)*(1-t)+channel(style.highlight,8)*t
+                        sb=channel(style.shadow,0)*(1-t)+channel(style.highlight,0)*t
+                    }
+                    Technique.SOLAR -> {
+                        if(style.id=="infrared"){sr=green*.95f+red*.15f;sg=blue*.72f+gray*.16f;sb=red*.65f+blue*.4f}
+                        else{val metal=(.5f+.38f*sin((gray-.5f)*8f)+edge*.45f).coerceIn(0f,1f);sr=metal*.88f;sg=metal*.96f;sb=metal}
+                    }
+                    Technique.PIXEL -> {
+                        val sample=pixels[(y/pixelSize*pixelSize)*width+x/pixelSize*pixelSize]
+                        sr=quant(channel(sample,16),style.levels);sg=quant(channel(sample,8),style.levels);sb=quant(channel(sample,0),style.levels)
+                        if(style.id=="gameboy"){
+                            val color=pocketPalette[(luma(sample)*3).roundToInt().coerceIn(0,3)]
+                            sr=channel(color,16);sg=channel(color,8);sb=channel(color,0)
+                        }
+                    }
+                }
+                if(style.id=="vhs"){
+                    sr=channel(pixels[y*width+max(0,x-detailStep)],16)
+                    sb=channel(pixels[y*width+min(width-1,x+detailStep)],0)
                 }
                 val sl=sr*.2126f+sg*.7152f+sb*.0722f
-                val saturation=styleSaturation
-                sr=((sl+(sr-sl)*saturation-.5f)*style.contrast+.5f)+style.warmth*.12f+noise*style.grain*.08f
-                sg=(sl+(sg-sl)*saturation-.5f)*style.contrast+.5f+noise*style.grain*.08f
-                sb=((sl+(sb-sl)*saturation-.5f)*style.contrast+.5f)-style.warmth*.15f+noise*style.grain*.08f
+                sr=(sl+(sr-sl)*styleSaturation-.5f)*style.contrast+.5f+style.warmth*.12f
+                sg=(sl+(sg-sl)*styleSaturation-.5f)*style.contrast+.5f
+                sb=(sl+(sb-sl)*styleSaturation-.5f)*style.contrast+.5f-style.warmth*.15f
+                val shadows=(1-gray)*(1-gray)*style.toning;val highlights=gray*gray*style.toning
+                sr+=((channel(style.shadow,16)-.5f)*shadows+(channel(style.highlight,16)-.5f)*highlights)*.3f
+                sg+=((channel(style.shadow,8)-.5f)*shadows+(channel(style.highlight,8)-.5f)*highlights)*.3f
+                sb+=((channel(style.shadow,0)-.5f)*shadows+(channel(style.highlight,0)-.5f)*highlights)*.3f
+                val grain=noise*style.grain*.045f*(.35f+gray*(1-gray))
+                sr=sr*(1-style.lift)+style.lift+grain;sg=sg*(1-style.lift)+style.lift+grain;sb=sb*(1-style.lift)+style.lift+grain
                 sr=red+(sr-red)*r.styleMix;sg=green+(sg-green)*r.styleMix;sb=blue+(sb-blue)*r.styleMix
-                val d=depth.sample(u,v)
+                val d=guide.sample(u,v,src)
                 var faceWeight=0f;var anchor=0f;var motion=0f
                 for(o in objects){
-                    val weight=MotionMath.mask(o,u,v,d)
-                    if(weight<.001f)continue
+                    val weight=MotionMath.mask(o,u,v,d);if(weight<.001f)continue
                     if(o.face && r.protectFaces)faceWeight=max(faceWeight,weight)
                     if(o.role==Role.ANCHOR)anchor=max(anchor,weight)
-                    else if(r.motion)motion+=MotionMath.signal(o,u,v,r.motionScale)*weight*o.intensity
+                    else if(r.motion){
+                        // Atmosphere uses photographed directional detail, not a screen-wide pattern.
+                        val signal=if(o.id==999){
+                            val a=o.angle*PI.toFloat()/180
+                            ((gx*cos(a)+gy*sin(a))*6f).coerceIn(-1f,1f)
+                        } else MotionMath.signal(o,u,v,r.motionScale,shortEdge.toFloat())
+                        motion+=signal*weight*o.intensity
+                    }
                 }
                 val stability=max(faceWeight,if(r.lockAnchors)anchor else 0f)
                 val far=(1-d).pow(1.5f)
-                val dx=depth.sample(u+.004f,v)-depth.sample(u-.004f,v)
-                val dy=depth.sample(u,v+.004f)-depth.sample(u,v-.004f)
-                val relief=((-dx-dy)*r.relief*1.1f).coerceIn(-.16f,.16f)*(1-faceWeight)
-                val local=(gray-smoothGray)*r.sharpness*(.3f+d)*.9f
-                val contact=-abs(dx+dy)*r.occlusion*.7f
-                val contrast=1+r.contrast+r.separation*(d-.35f)*r.depth*.42f
-                val haze=r.haze*far*.36f*r.depth
-                val focalBlur=((r.focus-d).coerceAtLeast(0f))*r.bokeh*.6f
+                val detailGain=r.sharpness*(.35f+d*.85f)+r.relief*gain*(.16f+d*.52f)+r.separation*gain*(d-.25f)*.35f
+                val local=(detail*detailGain).coerceIn(-.18f,.18f)*(1-faceWeight*.8f)
+                // Only deepen shadow detail already in the photograph. No depth-normal emboss.
+                val contact=(min(0f,detail)*r.occlusion*gain*.12f*(.35f+.65f*d)).coerceAtLeast(-.065f)*(1-faceWeight)
+                val contrast=(1+r.contrast+r.separation*gain*(d-.5f)*.16f).coerceIn(.6f,1.9f)
+                val haze=(r.haze*far*(.2f+.12f*r.separation)*gain).coerceAtMost(.65f)
+                val focalBlur=(MotionMath.smooth(0f,.7f,r.focus-d)*r.bokeh*(.18f+.16f*gain)*(1-edge*2).coerceIn(.2f,1f)).coerceAtMost(.8f)
                 sr=sr*(1-focalBlur)+br*focalBlur;sg=sg*(1-focalBlur)+bg*focalBlur;sb=sb*(1-focalBlur)+bb*focalBlur
                 val radial=sqrt((u-.5f).pow(2)+(v-.5f).pow(2))*1.414f
                 val periphery=(1-r.peripheral)+r.peripheral*MotionMath.smooth(.15f,.75f,radial)
-                val geometry=(r.screenSize/16f*45f/r.viewDistance).coerceIn(.4f,2f)
-                val illusion=motion.coerceIn(-1.2f,1.2f)*r.motionAmount*.075f*periphery*(1-stability)*
-                    ((1-r.depthCoupling)+r.depthCoupling*(.3f+d*.7f))*geometry
-                val micro=noise*r.texture*.012f*d*(1-faceWeight)
-                val tone=relief+local+contact+illusion+micro+r.exposure*.3f-r.vignette*radial.pow(2)*.22f
+                val structure=MotionMath.smooth(.015f,.1f,abs(detail)+edge*.35f)
+                val illusion=(motion.coerceIn(-1.2f,1.2f)*detail*r.motionAmount*1.7f*structure*periphery*(1-stability)*
+                    ((1-r.depthCoupling)+r.depthCoupling*(.3f+d*.7f))*geometry).coerceIn(-.16f,.16f)
+                val micro=detail*noise*r.texture*.12f*d*(1-faceWeight)
+                val tone=local+contact+illusion+micro+r.exposure*.3f-r.vignette*radial.pow(2)*.22f
                 sr=(sr-.5f)*contrast+.5f+tone;sg=(sg-.5f)*contrast+.5f+tone;sb=(sb-.5f)*contrast+.5f+tone
-                sr=sr*(1-haze)+.78f*haze;sg=sg*(1-haze)+.86f*haze;sb=sb*(1-haze)+.94f*haze
+                sr=sr*(1-haze)+.8f*haze;sg=sg*(1-haze)+.87f*haze;sb=sb*(1-haze)+.94f*haze
                 val lum=sr*.2126f+sg*.7152f+sb*.0722f
                 output[index]=rgb(lum+(sr-lum)*r.saturation,lum+(sg-lum)*r.saturation,lum+(sb-lum)*r.saturation)
             }
@@ -148,18 +209,56 @@ object PmddRenderer {
     fun effectiveDepth(raw:DepthMap,p:Project):DepthMap {
         val r=p.recipe.normalized();val result=raw.copy()
         for(y in 0 until raw.height)for(x in 0 until raw.width){
-            val i=y*raw.width+x;var d=raw.values[i]
-            for(o in p.objects)if(o.overrideDepth&&o.enabled){val mask=MotionMath.mask(o,x.toFloat()/raw.width,y.toFloat()/raw.height,d);d=d*(1-mask)+o.depth*mask}
-            if(r.invertDepth)d=1-d
-            // Smooth high-layer stack: one quantized depth field shared by effects and viewer.
-            d=(round(d*(r.layers-1))/(r.layers-1)).coerceIn(0f,1f)
-            result.values[i]=d
+            val i=y*raw.width+x;var d=raw.values[i].safe(.5f)
+            for(o in p.objects)if(o.overrideDepth&&o.enabled){
+                val mask=MotionMath.mask(o,(x+.5f)/raw.width,(y+.5f)/raw.height,d);d=d*(1-mask)+o.depth*mask
+            }
+            // Keep shading continuous. Layer count controls intersections in the interactive viewer.
+            result.values[i]=(if(r.invertDepth)1-d else d).coerceIn(0f,1f)
         }
         return result
     }
-    fun depthBitmap(depth:DepthMap):Bitmap = Bitmap.createBitmap(IntArray(depth.values.size){val d=(depth.values[it].safe(.5f)*255).roundToInt();0xff000000.toInt() or(d shl 16)or(d shl 8)or d},depth.width,depth.height,Bitmap.Config.ARGB_8888)
-    private fun luma(c:Int)=(((c shr 16)and 255)*.2126f+((c shr 8)and 255)*.7152f+(c and 255)*.0722f)/255f
+    fun depthBitmap(depth:DepthMap):Bitmap = Bitmap.createBitmap(IntArray(depth.values.size){val d=(depth.values[it].safe(.5f)*255).roundToInt();0xff000000.toInt()or(d shl 16)or(d shl 8)or d},depth.width,depth.height,Bitmap.Config.ARGB_8888)
+
+    private class GuidedDepth(source:Bitmap,val map:DepthMap) {
+        private val colors=IntArray(map.values.size)
+        init{val guide=Bitmap.createScaledBitmap(source,map.width,map.height,true);guide.getPixels(colors,0,map.width,0,0,map.width,map.height);if(guide!==source)guide.recycle()}
+        private fun weight(index:Int,color:Int):Float {
+            val delta=(abs(((color shr 16)and 255)-((colors[index] shr 16)and 255))+abs(((color shr 8)and 255)-((colors[index] shr 8)and 255))+abs((color and 255)-(colors[index]and 255)))/765f
+            return 1f/(1f+80f*delta*delta)
+        }
+        fun sample(u:Float,v:Float,color:Int):Float {
+            val x=u*(map.width-1);val y=v*(map.height-1);val ix=x.toInt();val iy=y.toInt();val fx=x-ix;val fy=y-iy
+            val a=iy*map.width+ix;val b=iy*map.width+min(ix+1,map.width-1)
+            val c=min(iy+1,map.height-1)*map.width+ix;val d=min(iy+1,map.height-1)*map.width+min(ix+1,map.width-1)
+            val wa=(1-fx)*(1-fy)*weight(a,color);val wb=fx*(1-fy)*weight(b,color)
+            val wc=(1-fx)*fy*weight(c,color);val wd=fx*fy*weight(d,color)
+            return (map.values[a]*wa+map.values[b]*wb+map.values[c]*wc+map.values[d]*wd)/(wa+wb+wc+wd).coerceAtLeast(.00001f)
+        }
+    }
+    private suspend fun boxBlur(pixels:IntArray,w:Int,h:Int,radius:Int):IntArray {
+        val tmp=IntArray(pixels.size);val result=IntArray(pixels.size);val span=radius*2+1;val ctx=currentCoroutineContext()
+        for(pass in 0..1){
+            val source=if(pass==0)pixels else tmp;val target=if(pass==0)tmp else result
+            val rows=if(pass==0)h else w;val length=if(pass==0)w else h;val step=if(pass==0)1 else w
+            for(row in 0 until rows){
+                if(row%32==0)ctx.ensureActive()
+                val start=if(pass==0)row*w else row
+                var rr=0;var gg=0;var bb=0
+                for(k in -radius..radius){val c=source[start+k.coerceIn(0,length-1)*step];rr+=(c shr 16)and 255;gg+=(c shr 8)and 255;bb+=c and 255}
+                for(i in 0 until length){
+                    target[start+i*step]=0xff000000.toInt()or((rr/span)shl 16)or((gg/span)shl 8)or(bb/span)
+                    val a=source[start+(i-radius).coerceIn(0,length-1)*step];val b=source[start+(i+radius+1).coerceIn(0,length-1)*step]
+                    rr+=((b shr 16)and 255)-((a shr 16)and 255);gg+=((b shr 8)and 255)-((a shr 8)and 255);bb+=(b and 255)-(a and 255)
+                }
+            }
+        }
+        return result
+    }
+    private fun channel(c:Int,shift:Int)=((c shr shift)and 255)/255f
+    private fun luma(c:Int)=( ((c shr 16)and 255)*.2126f+((c shr 8)and 255)*.7152f+(c and 255)*.0722f)/255f
     private fun quant(x:Float,n:Int)=round(x*(n-1))/(n-1)
+    private fun softQuant(x:Float,n:Int):Float {val a=x.coerceIn(0f,1f)*(n-1);val low=floor(a);val f=a-low;return (low+MotionMath.smooth(.18f,.82f,f))/(n-1)}
     private fun noise(x:Int,y:Int):Float {var n=x*374761393+y*668265263;n=(n xor(n ushr 13))*1274126177;return (n and 65535)/32767.5f-1f}
     private fun rgb(r:Float,g:Float,b:Float)=0xff000000.toInt()or((r.coerceIn(0f,1f)*255).roundToInt() shl 16)or((g.coerceIn(0f,1f)*255).roundToInt() shl 8)or(b.coerceIn(0f,1f)*255).roundToInt()
 }

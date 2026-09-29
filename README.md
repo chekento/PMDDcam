@@ -4,9 +4,11 @@
 
 [![Android Build](https://github.com/chekento/PMDDcam/actions/workflows/android.yml/badge.svg)](https://github.com/chekento/PMDDcam/actions/workflows/android.yml)
 
-## [⬇ PMDDcam 0.1.2 · Android-APK herunterladen](https://github.com/chekento/PMDDcam/releases/download/v0.1.2/PMDDcam-0.1.2.apk)
+## [⬇ PMDDcam 0.2.0 · Android-APK herunterladen](https://github.com/chekento/PMDDcam/releases/download/v0.2.0/PMDDcam-0.2.0.apk)
 
-Android 8.0 oder neuer · ARM64 / ARMv7 / x86_64 · persönliche Preview-Version. Der Download wird nach erfolgreichem Build, Unit-Tests, Lint und Emulatorprüfung veröffentlicht. [Release & Prüfsumme](https://github.com/chekento/PMDDcam/releases/tag/v0.1.2) · [Build-Artefakte](https://github.com/chekento/PMDDcam/actions).
+Android 8.0 oder neuer · ARM64 / ARMv7 / x86_64 · persönliche Preview-Version. Der Download wird nach erfolgreichem Build, Unit-Tests, Lint und Emulatorprüfung veröffentlicht. [Release & Prüfsumme](https://github.com/chekento/PMDDcam/releases/tag/v0.2.0) · [Build-Artefakte](https://github.com/chekento/PMDDcam/actions).
+
+**Neu in 0.2.0:** bildfüllende Kamera, drei kompakte Menüs und ein dauerhaft sichtbarer **Original ↔ PMDD**-Button. Kontinuierliche Tiefenverarbeitung ersetzt künstliche Tiefenkanten-Schatten; die Stilrezepte und der obere Regelbereich wurden überarbeitet.
 
 ## Vom Foto zum PMDD-Projekt
 
@@ -21,10 +23,10 @@ Android 8.0 oder neuer · ARM64 / ARMv7 / x86_64 · persönliche Preview-Version
 
 | Bereich | Enthalten |
 |---|---|
-| Kamera | CameraX, Front/Rückkamera, Fokus per Tippen, Zoom, Blitz, Raster, 3-/10-Sekunden-Timer, automatische Ausrichtung |
+| Kamera | Bildfüllendes CameraX mit passendem Aufnahmeausschnitt, Front/Rückkamera, Fokus per Tippen, Pinch-Zoom, Blitz, Raster, 3-/10-Sekunden-Timer |
 | Originalarchiv | Unveränderte Originaldatei, getrennte Rezepte und Tiefenkarten, Projektliste, Wiederaufnahme nach Abbruch |
 | Tiefenmodell | MiDaS v2.1 Small direkt in der APK; relative Tiefe aus einem Einzelbild; kein API-Schlüssel |
-| Ebenen | 8–128 Tiefenstufen, Standard 64; frei einstellbare Tiefe, Trennung, Fokus, Lichtrelief, Atmosphäre, Bokeh, Kontaktschatten |
+| Ebenen | 8–128 Abtastebenen im Viewer, Standard 64; kontinuierliches Tiefenfeld, Tiefenstärke bis 250 %, Trennung, Fokus, Lichtrelief, Atmosphäre, Bokeh und Schattenzeichnung |
 | Objektlogik | Anker / dynamisch / Atmosphäre, eigene Bewegungsrichtung, Intensität, Tempo und Tiefenposition je Bereich |
 | Bewegungsidentitäten | Annäherung, Entfernung, Drift, Rotation, Fließen, Pulsieren; lokale statische Kontrastfolgen |
 | Schutz | Stabile Anker und erkannte Gesichter vor Bewegungsmustern schützen |
@@ -32,7 +34,7 @@ Android 8.0 oder neuer · ARM64 / ARMv7 / x86_64 · persönliche Preview-Version
 | Stil | 60 lokale Stilrezepte in sechs Gruppen, mit echten Vorschauen und einstellbarer Stilmischung |
 | Betrachtermodus | Touch, Pinch, Geräteneigung oder zuschaltbare Kopfsteuerung per Frontkamera; links/rechts, oben/unten, näher/weiter |
 | Betrachtung | Achsen einzeln aktivieren, Parallaxenstärke, Bildbreite und Betrachtungsabstand einstellen, neu kalibrieren |
-| Bearbeitung | Undo/Redo, Aufnahme-Vorgaben, natürliches und intensives Preset, Originalvergleich |
+| Bearbeitung | Looks / PMDD / Werkzeuge mit lesbaren Untermenüs, direkter Original/PMDD-Umschalter, Undo/Redo, Aufnahme-Vorgaben, natürliches und intensives Preset |
 | Export | PNG, JPEG, Original, Tiefenkarte, ZIP-Projekt; Projektimport; Android-Teilen-Menü |
 | Verarbeitung | Lokal auf dem Gerät, keine Foto-Uploads, kein Cloudkonto, keine App-Internetberechtigung |
 
@@ -57,7 +59,7 @@ Die Stile verändern Pixel mit lokalen Bildverfahren (u. a. Kantenzeichnung, Qua
 
 **Interaktive Ansicht:** Eine zusätzliche, tatsächlich auf Bewegung reagierende 2.5D-Ansicht in der App. Die Frontkamera erfasst Position und relative Größe des Gesichts, ohne Aufnahmen zu speichern. Das Neigen des Geräts steuert zwei Achsen; näher/weiter lässt sich dort per Pinch steuern. Nur die Kopfsteuerung reagiert auf Kopfbewegung vor einem ruhenden Gerät. PNG/JPEG enthalten diese Interaktion nicht.
 
-Ein einzelnes Foto liefert keine echten verdeckten Rückseiten oder metrisch gemessene 3D-Geometrie. MiDaS schätzt relative Tiefe. Große Blickwinkel können Kanten dehnen; die Bewegung ist deshalb begrenzt. Die Ebenenzahl beschreibt die Tiefenstufen des Feldes, nicht 64 automatisch ausgeschnittene semantische Objekte. SSD-MobileNet erkennt bis zu 20 Objektbereiche aus 80 COCO-Klassen zusätzlich zu Gesichtern; weitere Bereiche können manuell ergänzt werden. Die allgemeinen Objektfelder sind weich und tiefengeführt, keine universell pixelgenaue Segmentierung.
+Ein einzelnes Foto liefert keine echten verdeckten Rückseiten oder metrisch gemessene 3D-Geometrie. MiDaS schätzt relative Tiefe. Große Blickwinkel können Kanten dehnen; die Bewegung ist deshalb begrenzt. Die Ebenenzahl beschreibt die Abtastung im interaktiven Viewer, nicht 64 automatisch ausgeschnittene semantische Objekte. SSD-MobileNet erkennt bis zu 20 Objektbereiche aus 80 COCO-Klassen zusätzlich zu Gesichtern; weitere Bereiche können manuell ergänzt werden. Die allgemeinen Objektfelder sind weich und tiefengeführt, keine universell pixelgenaue Segmentierung.
 
 ## PMDD-Herkunft
 
@@ -80,6 +82,6 @@ Die Preview verwendet einen absichtlich öffentlichen Entwicklungsschlüssel in 
 
 ## Prüfungen und Grenzen der Preview
 
-Die CI prüft Rezepte, Grenzwerte, konstante/ungültige Tiefenwerte, 60 unterschiedliche Stilresultate, deterministisches Rendering, unveränderte Originalbytes, Archive, lokalen Modelllauf einschließlich bekannter Hunde-Erkennungen, echte CameraX-Aufnahme über die virtuelle Kamera, Stilwechsel und Activity-Neustart auf einem Android-35-Emulator im Flugmodus (WLAN und mobile Daten aus). Reale Kameraqualität, Latenz und die subjektive PMDD-Wirkung müssen zusätzlich auf echten Geräten und mit unterschiedlichen Fotos beurteilt werden. Export bis 4096 Pixel längste Kante; bei kleinem App-Heap maximal 2048 Pixel. Originale behalten ihre ursprünglichen Bytes und Auflösung.
+Die CI prüft Rezepte, Grenzwerte, konstante/ungültige Tiefenwerte, 60 unterschiedliche Stilresultate, vollständig abschaltbare Stilmischung, glatte Flächen ohne künstliche Schatten/Wellen, wirksame hohe Reglerwerte, deterministisches Rendering, unveränderte Originalbytes, Archive, lokalen Modelllauf einschließlich bekannter Hunde-Erkennungen, echte CameraX-Aufnahme über die virtuelle Kamera, Vollbild-Aufnahmeausschnitt, Original-Umschalter, Pop-up-Menüs, Stilwechsel und Activity-Neustart auf einem Android-35-Emulator im Flugmodus (WLAN und mobile Daten aus). Reale Kameraqualität, Latenz und die subjektive PMDD-Wirkung müssen zusätzlich auf echten Geräten und mit unterschiedlichen Fotos beurteilt werden. Export bis 4096 Pixel längste Kante; bei kleinem App-Heap maximal 2048 Pixel. Originale behalten ihre ursprünglichen Bytes und Auflösung.
 
 MiDaS, SSD-MobileNet-Modell und ONNX Runtime: MIT. AndroidX/Kotlin: jeweilige Apache-2.0-Lizenzen. ML Kit: Google-Bedingungen. Hinweise in [THIRD_PARTY.txt](app/src/main/assets/THIRD_PARTY.txt). Für den eigenen App-Quellcode wurde keine zusätzliche Open-Source-Lizenz festgelegt.

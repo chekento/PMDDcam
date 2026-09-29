@@ -1,6 +1,7 @@
 package cloud.kosch.pmddcam
 
 import android.graphics.Bitmap
+import kotlin.math.abs
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -50,6 +51,43 @@ class CoreTest {
         assertTrue(MotionMath.mask(o,.5f,.5f,.7f)>.99f)
         o.enabled=false;assertEquals(0f,MotionMath.mask(o,.5f,.5f,.7f),0f)
         assertTrue(MotionMath.wave(.1f)<MotionMath.wave(.6f))
+    }
+    @Test fun `flat surfaces cannot acquire bands or phantom shadows from depth and motion`()=runBlocking {
+        val photo=Bitmap.createBitmap(128,96,Bitmap.Config.ARGB_8888).apply{eraseColor(0xff9cacbd.toInt())}
+        val d=DepthMap(32,24,FloatArray(32*24){i->if(i%32<16).1f else .9f})
+        val recipe=Recipe(depth=2.5f,relief=1f,occlusion=1f,motionAmount=2f,texture=1f,
+            sharpness=0f,separation=0f,haze=0f,bokeh=0f,vignette=0f,contrast=0f,saturation=1f,styleMix=0f)
+        val objects=mutableListOf(SceneObject(999,"Atmosphäre",0f,0f,1f,1f,Role.ATMOSPHERE),
+            SceneObject(1,"Dynamisch",.1f,.1f,.9f,.9f,intensity=1f,depth=.5f))
+        val result=PmddRenderer.render(photo,d,Project("flat",0,recipe,objects))
+        assertArrayEquals("Depth transitions must not paint shadows or waves onto a flat photo",pixels(photo),pixels(result.image))
+        photo.recycle();result.image.recycle()
+    }
+    @Test fun `maximum depth produces substantially stronger image cues than low depth`()=runBlocking {
+        val photo=fixture();val d=DepthMap(8,8,FloatArray(64){it/63f})
+        val r=Recipe(styleMix=0f,sharpness=.15f,texture=0f,vignette=0f,contrast=0f,motion=false,relief=.8f,separation=.8f)
+        suspend fun render(amount:Float)=PmddRenderer.render(photo,d,Project("strength",0,r.copy(depth=amount),mutableListOf())).image
+        val base=render(0f);val low=render(.35f);val high=render(2.5f)
+        fun difference(a:Bitmap,b:Bitmap):Double{val pa=pixels(a);val pb=pixels(b);return pa.indices.sumOf{i->listOf(0,8,16).sumOf{shift->abs(((pa[i] shr shift)and 255)-((pb[i] shr shift)and 255))}}.toDouble()/pa.size/3}
+        assertTrue("The extended range must change pixels, not only the slider label",difference(high,base)>difference(low,base)*1.8)
+        listOf(photo,base,low,high).forEach{it.recycle()}
+    }
+    @Test fun `zero style mix fully disables every style including pixel palettes`()=runBlocking {
+        val photo=fixture();val d=DepthMap(8,8,FloatArray(64){it/63f});var baseline:IntArray?=null
+        for(style in Styles.all){
+            val result=PmddRenderer.render(photo,d,Project("mix",0,Recipe(style=style.id,styleMix=0f),mutableListOf()))
+            val values=pixels(result.image);if(baseline==null)baseline=values else assertArrayEquals(style.name,baseline,values)
+            result.image.recycle()
+        };photo.recycle()
+    }
+    @Test fun `continuous depth and new intensity ranges survive recipe round trip`() {
+        val recipe=Recipe.from(Recipe(layers=8,depth=2.5f,motionAmount=2f,parallax=2f).json())
+        assertEquals(2.5f,recipe.depth,0f);assertEquals(2f,recipe.motionAmount,0f);assertEquals(2f,recipe.parallax,0f)
+        val d=DepthMap(32,8,FloatArray(256){it/255f})
+        val p=Project("continuous",0,recipe,mutableListOf())
+        assertArrayEquals("Eight viewer planes must not posterize the photo depth",d.values,PmddRenderer.effectiveDepth(d,p).values,0f)
+        p.objects+=SceneObject(1,"Foreground",.1f,.1f,.9f,.9f,depth=.95f,overrideDepth=true)
+        assertEquals(.95f,PmddRenderer.effectiveDepth(d,p).sample(.5f,.5f),.001f)
     }
     @Test fun `original survives reediting and project archive round trip`() {
         val store=ProjectStore(RuntimeEnvironment.getApplication());val p=store.create(Recipe())
