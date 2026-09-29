@@ -34,9 +34,9 @@ jobs:
       - name: Prepare download
         run: |
           mkdir -p release
-          cp app/build/outputs/apk/release/app-release.apk release/PMDDcam-0.1.0.apk
+          cp app/build/outputs/apk/release/app-release.apk release/PMDDcam-0.1.1.apk
           cd release
-          sha256sum PMDDcam-0.1.0.apk > SHA256SUMS.txt
+          sha256sum PMDDcam-0.1.1.apk > SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
           name: PMDDcam-install
@@ -80,6 +80,7 @@ jobs:
           arch: x86_64
           profile: pixel_6
           disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back emulated -camera-front emulated
           script: bash scripts/device-tests.sh
       - uses: actions/upload-artifact@v4
         if: always()
@@ -108,8 +109,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          if gh release view v0.1.0 >/dev/null 2>&1; then
-            gh release upload v0.1.0 release/* --clobber
+          if gh release view v0.1.1 >/dev/null 2>&1; then
+            gh release upload v0.1.1 release/* --clobber
           else
-            gh release create v0.1.0 release/* --target '${{ github.sha }}' --title 'PMDDcam 0.1.0 · Android Preview' --prerelease --notes 'Native PMDD camera preview: 64 default depth layers, bundled on-device depth and object analysis, 60 styles, non-destructive projects, static exports and interactive head/tilt/touch viewer. Personal-installation APK uses the Android debug signing key. See README for capabilities and known limits.'
+            gh release create v0.1.1 release/* --target '${{ github.sha }}' --title 'PMDDcam 0.1.1 · Android Preview' --prerelease --notes 'Native PMDD camera preview: 64 default depth layers, bundled on-device depth and object analysis, 60 styles, non-destructive projects, static exports and interactive head/tilt/touch viewer. Personal-installation APK uses the Android debug signing key. See README for capabilities and known limits.'
           fi

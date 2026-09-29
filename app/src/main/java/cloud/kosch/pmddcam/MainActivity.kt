@@ -147,7 +147,7 @@ class MainActivity:ComponentActivity(),SensorEventListener {
         layout.addView(SeekBar(this).apply{max=100;contentDescription="Kamerazoom";setOnSeekBarChangeListener(seek{value->val state=camera?.cameraInfo?.zoomState?.value;val maxZoom=minOf(8f,state?.maxZoomRatio?:1f);val minZoom=state?.minZoomRatio?:1f;val ratio=minZoom+(maxZoom-minZoom)*value;camera?.cameraControl?.setZoomRatio(ratio);zoomLabel.text="Zoom · %.1f×".format(ratio)})})
         val shutterRow=row().apply{gravity=Gravity.CENTER_VERTICAL;setPadding(0,dp(6),0,dp(10))}
         shutterRow.addView(button("Import"){pickPhoto.launch(arrayOf("image/*"))},LinearLayout.LayoutParams(0,dp(64),1f))
-        shutterRow.addView(button("●",true){takePhoto()},LinearLayout.LayoutParams(dp(84),dp(76)).apply{marginStart=dp(14);marginEnd=dp(14)})
+        shutterRow.addView(button("●",true){takePhoto()}.apply{contentDescription="Foto aufnehmen"},LinearLayout.LayoutParams(dp(84),dp(76)).apply{marginStart=dp(14);marginEnd=dp(14)})
         shutterRow.addView(button("Wechsel"){front=!front;bindCamera(cameraPreview)},LinearLayout.LayoutParams(0,dp(64),1f));layout.addView(shutterRow)
         content.addView(layout,FrameLayout.LayoutParams(-1,-1))
         nav("Sammlung"){showLibrary()};nav("Vorgaben"){settingsDialog(defaults(),true)};nav("Projekt öffnen"){pickProject.launch(arrayOf("application/zip","application/octet-stream"))}
@@ -433,7 +433,7 @@ class MainActivity:ComponentActivity(),SensorEventListener {
         }
     }
     private fun about(){
-        AlertDialog.Builder(this).setTitle("PMDDcam · 0.1.0").setMessage("Fotografiere einen tieferen Raum.\n\nPMDD 4.0 — Perceptual Motion & Depth Design\nKonzept: Kolja Werner Schumann · kosch.cloud\nHuman-AI-Co-Design mit ChatGPT.\n\nDie Fotoverarbeitung und Erkennung laufen auf deinem Gerät. Originale werden getrennt von Effekten gespeichert. Zum Sichern außerhalb der App ein PMDD-Projekt exportieren.\n\nStatische PMDD-Illusionen und interaktive 2.5D-Parallaxe sind getrennte Modi. Tiefen werden aus einem Foto geschätzt; verdeckte Rückseiten kann das Foto nicht zeigen. Die 60 Stile sind lokale Bildverfahren.\n\nMiDaS v2.1 (MIT), ONNX Runtime (MIT), AndroidX (Apache 2.0), Google ML Kit.\n\n${assets.open("THIRD_PARTY.txt").bufferedReader().use{it.readText()}}")
+        AlertDialog.Builder(this).setTitle("PMDDcam · 0.1.1").setMessage("Fotografiere einen tieferen Raum.\n\nPMDD 4.0 — Perceptual Motion & Depth Design\nKonzept: Kolja Werner Schumann · kosch.cloud\nHuman-AI-Co-Design mit ChatGPT.\n\nDie Fotoverarbeitung und Erkennung laufen auf deinem Gerät. Originale werden getrennt von Effekten gespeichert. Zum Sichern außerhalb der App ein PMDD-Projekt exportieren.\n\nStatische PMDD-Illusionen und interaktive 2.5D-Parallaxe sind getrennte Modi. Tiefen werden aus einem Foto geschätzt; verdeckte Rückseiten kann das Foto nicht zeigen. Die 60 Stile sind lokale Bildverfahren.\n\nMiDaS v2.1 (MIT), ONNX Runtime (MIT), AndroidX (Apache 2.0), Google ML Kit.\n\n${assets.open("THIRD_PARTY.txt").bufferedReader().use{it.readText()}}")
             .setPositiveButton("Schließen",null).setNeutralButton("PMDD-Geschichte"){_,_->startActivity(Intent(Intent.ACTION_VIEW,Uri.parse("https://kosch.cloud/blog/pmdd---die-magie-hinter-der-illusion--wie-wahrnehmung-und-ki-zu-lebendigen-bildern-verschmelzen")))}.setNegativeButton("GitHub"){_,_->startActivity(Intent(Intent.ACTION_VIEW,Uri.parse("https://github.com/chekento/PMDDcam")))}.show()
     }
 

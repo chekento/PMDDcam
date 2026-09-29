@@ -1,5 +1,12 @@
 # Änderungen
 
+## 0.1.1 · 29.09.2026 · Android Preview
+
+- Kameraaufnahme im Emulator bis zum automatisch gespeicherten PMDD-Projekt prüfen.
+- Stilwechsel und Erhalt der Originalbytes über Activity-Neustarts prüfen.
+- Zugängliche Beschriftung des Auslösers für Screenreader.
+- Screenshots der vollständigen Aufnahme- und Bearbeitungsoberfläche in der CI sichern.
+
 ## 0.1.0 · 29.09.2026 · Android Preview
 
 - Erstimplementierung im zuvor leeren Repository.
