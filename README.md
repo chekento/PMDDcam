@@ -1,46 +1,146 @@
 # PMDDcam
 
-**Fotografiere einen tieferen Raum.** Native Android-Kamera mit PMDD 4.0, lokalen KI-Tiefenkarten, Objekterkennung und 60 Stilen.
+<div align="center">
+
+**Perceptual Motion & Depth Design Camera for Android**
+
+**Fotografiere einen tieferen Raum. · Photograph a deeper space.**
 
 [![Android Build](https://github.com/chekento/PMDDcam/actions/workflows/android.yml/badge.svg)](https://github.com/chekento/PMDDcam/actions/workflows/android.yml)
+![Version](https://img.shields.io/badge/preview-v0.2.0-19d3ae)
+![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)
+![Processing](https://img.shields.io/badge/photo_processing-on--device-19d3ae)
+![Cloud](https://img.shields.io/badge/photo_uploads-none-25343c)
 
-## [⬇ PMDDcam 0.2.0 · Android-APK herunterladen](https://github.com/chekento/PMDDcam/releases/download/v0.2.0/PMDDcam-0.2.0.apk)
+<a href="https://raw.githubusercontent.com/chekento/PMDDcam/main/docs/assets/pmddcam-hero-01.webp">
+  <img src="docs/assets/pmddcam-hero-01.webp" alt="PMDDcam — Turn photos into layered PMDD art" width="100%">
+</a>
 
-Android 8.0 oder neuer · ARM64 / ARMv7 / x86_64 · persönliche Preview-Version. Der Download wird nach erfolgreichem Build, Unit-Tests, Lint und Emulatorprüfung veröffentlicht. [Release & Prüfsumme](https://github.com/chekento/PMDDcam/releases/tag/v0.2.0) · [Build-Artefakte](https://github.com/chekento/PMDDcam/actions).
+### 🌐 Sprache / Language / Langue / Idioma / 语言 / 言語
 
-**Neu in 0.2.0:** bildfüllende Kamera, drei kompakte Menüs und ein dauerhaft sichtbarer **Original ↔ PMDD**-Button. Kontinuierliche Tiefenverarbeitung ersetzt künstliche Tiefenkanten-Schatten; die Stilrezepte und der obere Regelbereich wurden überarbeitet.
+**[Auto-detect Web Frontpage](https://raw.githack.com/chekento/PMDDcam/main/docs/index.html)** ·
+[Deutsch](https://raw.githack.com/chekento/PMDDcam/main/docs/index.html?lang=de) ·
+[English](https://raw.githack.com/chekento/PMDDcam/main/docs/index.html?lang=en) ·
+[Français](https://raw.githack.com/chekento/PMDDcam/main/docs/index.html?lang=fr) ·
+[Español](https://raw.githack.com/chekento/PMDDcam/main/docs/index.html?lang=es) ·
+[中文](https://raw.githack.com/chekento/PMDDcam/main/docs/index.html?lang=zh) ·
+[日本語](https://raw.githack.com/chekento/PMDDcam/main/docs/index.html?lang=ja)
 
-## Vom Foto zum PMDD-Projekt
+</div>
 
-1. Foto mit Front- oder Rückkamera aufnehmen oder ein Bild importieren.
-2. Das Original wird zuerst im privaten Projektspeicher gesichert.
-3. Das gebündelte MiDaS-Modell schätzt räumliche Tiefe. Das ebenfalls gebündelte SSD-MobileNet erkennt Objektbereiche aus 80 Klassen. ML Kit ergänzt Gesichter und eine Personenmaske.
-4. PMDDcam verarbeitet das Foto automatisch mit **64 Tiefenebenen und 85 % Tiefenstärke**.
-5. Stil, Licht, Tiefe und lokale Bewegungsidentitäten nachträglich ändern. Das Original wird nie überschrieben.
-6. Ein statisches PNG/JPEG oder ein vollständig bearbeitbares Projekt mit Original, Tiefenkarte und Rezept exportieren.
+---
 
-## Funktionen
+## 📲 Android Preview herunterladen
+
+<a href="https://github.com/chekento/PMDDcam/releases/download/v0.2.0/PMDDcam-0.2.0.apk">
+  <img src="docs/assets/pmddcam-apk-download.webp" alt="Download PMDDcam APK for Android" width="100%">
+</a>
+
+<div align="center">
+
+### [⬇ PMDDcam 0.2.0 · APK direkt herunterladen](https://github.com/chekento/PMDDcam/releases/download/v0.2.0/PMDDcam-0.2.0.apk)
+
+Android 8.0+ · ARM64 / ARMv7 / x86_64 · Preview · ca. 229 MB  
+**SHA-256:** `9e933df8261ae262f5d386b9d53ef244cfa4c585ed681ec595ba2e5bd9410927`
+
+[Release & Prüfsumme](https://github.com/chekento/PMDDcam/releases/tag/v0.2.0) ·
+[Builds](https://github.com/chekento/PMDDcam/actions) ·
+[Changelog](CHANGELOG.md)
+
+</div>
+
+> Das Download-Banner lädt die APK direkt. Die übrigen Werbe- und Vergleichsbilder öffnen beim Anklicken die jeweilige Bilddatei in voller Größe.
+
+---
+
+## ✨ Original ↔ PMDD — dasselbe Foto, eine andere Tiefenwirkung
+
+<table>
+  <tr>
+    <th align="center">ORIGINAL · BEFORE</th>
+    <th align="center">PMDD · AFTER</th>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <a href="https://raw.githubusercontent.com/chekento/PMDDcam/main/docs/assets/pmddcam-before.webp">
+        <img src="docs/assets/pmddcam-before.webp" alt="PMDDcam original forest photo before processing" width="92%">
+      </a>
+    </td>
+    <td align="center" width="50%">
+      <a href="https://raw.githubusercontent.com/chekento/PMDDcam/main/docs/assets/pmddcam-after.webp">
+        <img src="docs/assets/pmddcam-after.webp" alt="Same forest photo after PMDD processing" width="92%">
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Original bleibt unverändert erhalten.</strong></td>
+    <td align="center"><strong>PMDD-Rezept bleibt nachträglich bearbeitbar.</strong></td>
+  </tr>
+</table>
+
+PMDDcam arbeitet **nicht-destruktiv**: Das Original wird zuerst im privaten Projektspeicher gesichert. Tiefenkarte, Stil und PMDD-Rezept werden getrennt gehalten. Mit dem permanent sichtbaren **Original ↔ PMDD**-Schalter lässt sich die Wirkung jederzeit unmittelbar vergleichen.
+
+---
+
+## 🎨 PMDDcam in Bildern
+
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <a href="https://raw.githubusercontent.com/chekento/PMDDcam/main/docs/assets/pmddcam-hero-02.webp">
+        <img src="docs/assets/pmddcam-hero-02.webp" alt="PMDDcam features — styles, depth, object detection and live effects" width="100%">
+      </a>
+    </td>
+    <td width="50%" align="center">
+      <a href="https://raw.githubusercontent.com/chekento/PMDDcam/main/docs/assets/pmddcam-hero-03.webp">
+        <img src="docs/assets/pmddcam-hero-03.webp" alt="PMDDcam layered depth and motion illusion" width="100%">
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <a href="https://raw.githubusercontent.com/chekento/PMDDcam/main/docs/assets/pmddcam-hero-04.webp">
+        <img src="docs/assets/pmddcam-hero-04.webp" alt="PMDDcam Android repository showcase" width="72%">
+      </a>
+    </td>
+  </tr>
+</table>
+
+---
+
+## Was PMDDcam macht
+
+PMDDcam verbindet eine native Android-Kamera mit **PMDD 4.0 — Perceptual Motion & Depth Design**, lokaler Tiefenschätzung, Objekterkennung, 60 Stilrezepten und einer interaktiven 2.5D-Betrachtung. Fotoanalyse und Rendering laufen auf dem Gerät; die App benötigt für die Fotoverarbeitung **keinen Cloud-Upload und keinen API-Schlüssel**.
 
 | Bereich | Enthalten |
 |---|---|
-| Kamera | Bildfüllendes CameraX mit passendem Aufnahmeausschnitt, Front/Rückkamera, Fokus per Tippen, Pinch-Zoom, Blitz, Raster, 3-/10-Sekunden-Timer |
-| Originalarchiv | Unveränderte Originaldatei, getrennte Rezepte und Tiefenkarten, Projektliste, Wiederaufnahme nach Abbruch |
-| Tiefenmodell | MiDaS v2.1 Small direkt in der APK; relative Tiefe aus einem Einzelbild; kein API-Schlüssel |
-| Ebenen | 8–128 Abtastebenen im Viewer, Standard 64; kontinuierliches Tiefenfeld, Tiefenstärke bis 250 %, Trennung, Fokus, Lichtrelief, Atmosphäre, Bokeh und Schattenzeichnung |
-| Objektlogik | Anker / dynamisch / Atmosphäre, eigene Bewegungsrichtung, Intensität, Tempo und Tiefenposition je Bereich |
-| Bewegungsidentitäten | Annäherung, Entfernung, Drift, Rotation, Fließen, Pulsieren; lokale statische Kontrastfolgen |
-| Schutz | Stabile Anker und erkannte Gesichter vor Bewegungsmustern schützen |
-| Manuelle Korrektur | Tiefenpinsel mit weicher Kante, Strich-Undo, Modelltiefe wiederherstellen; eigene Objektbereiche markieren |
-| Stil | 60 lokale Stilrezepte in sechs Gruppen, mit echten Vorschauen und einstellbarer Stilmischung |
-| Betrachtermodus | Touch, Pinch, Geräteneigung oder zuschaltbare Kopfsteuerung per Frontkamera; links/rechts, oben/unten, näher/weiter |
-| Betrachtung | Achsen einzeln aktivieren, Parallaxenstärke, Bildbreite und Betrachtungsabstand einstellen, neu kalibrieren |
-| Bearbeitung | Looks / PMDD / Werkzeuge mit lesbaren Untermenüs, direkter Original/PMDD-Umschalter, Undo/Redo, Aufnahme-Vorgaben, natürliches und intensives Preset |
-| Export | PNG, JPEG, Original, Tiefenkarte, ZIP-Projekt; Projektimport; Android-Teilen-Menü |
-| Verarbeitung | Lokal auf dem Gerät, keine Foto-Uploads, kein Cloudkonto, keine App-Internetberechtigung |
+| 📷 Kamera | Bildfüllendes CameraX, Front/Rückkamera, Tap-Fokus, Pinch-Zoom, Blitz, Raster, 3-/10-Sekunden-Timer |
+| ↔️ Sofortvergleich | Permanenter Original ↔ PMDD-Schalter auf dem Hauptschirm |
+| 🧠 Lokale Analyse | MiDaS v2.1 Small, SSD-MobileNet und ML-Kit-Hilfen direkt auf dem Gerät |
+| 🧊 Tiefe | 8–128 Viewer-Abtastebenen, Standard 64; Tiefenstärke bis 250 %, Trennung, Fokus, Relief, Atmosphäre, Bokeh |
+| 🎯 Objektlogik | Anker / dynamisch / Atmosphäre; Bewegungsrichtung, Intensität, Tempo und Tiefenposition je Bereich |
+| 🪄 Stile | 60 lokale Rezepte aus Foto, Illustration, Atelier, Retro, Zukunft und Atmosphäre |
+| 👁 Betrachtermodus | Touch, Pinch, Geräteneigung oder optionale Kopfsteuerung; links/rechts, oben/unten, näher/weiter |
+| 🧰 Bearbeitung | Kompakte Menüs für Looks / PMDD / Werkzeuge, Undo/Redo, Tiefenpinsel, manuelle Bereiche |
+| 💾 Export | PNG, JPEG, Original, Tiefenkarte und vollständig bearbeitbares ZIP-Projekt |
+| 🔒 Privatsphäre | Lokale Verarbeitung, keine Foto-Uploads, kein Cloudkonto, keine App-Internetberechtigung |
 
-Die Sammlung liegt im privaten App-Speicher und bleibt bei Neustarts und kompatiblen Updates erhalten. Für ein Backup außerhalb der App **„Bearbeitbares PMDD-Projekt“** exportieren; das enthält auch das Original. Eine Deinstallation entfernt privaten App-Speicher.
+### Neu in 0.2.0
 
-## Die 60 Stile
+- bildfüllende Kamera statt überlagernder Status-/Menüflächen
+- drei kompakte Hauptmenüs mit lesbaren Pop-ups
+- dauerhaft sichtbarer **Original ↔ PMDD**-Umschalter
+- kontinuierliche Tiefenverarbeitung statt künstlicher Tiefenkanten-Schatten
+- überarbeitete Stilrezepte
+- Tiefenstärke bis 250 %, Motion/Parallaxe bis 200 %
+- reproduzierbare QA-Bilder aus den Android-Tests
+
+---
+
+## Die 60 PMDD-fähigen Stile
+
+<details>
+<summary><strong>Alle Stilgruppen anzeigen</strong></summary>
 
 | Gruppe | Stile |
 |---|---|
@@ -51,37 +151,94 @@ Die Sammlung liegt im privaten App-Speicher und bleibt bei Neustarts und kompati
 | Zukunft | Futuretech, Cyberpunk, Neon Tokyo, Holographic, Synthwave, Blueprint, Infrared Dream, Matrix Green, Deep Space, Liquid Metal |
 | Atmosphäre | Dream Pastel, Nordic Mist, Desert Sand, Emerald Forest, Sakura Bloom, Underwater, Lava Light, Arctic Ice, Moonlight, Velvet Dusk |
 
-Die Stile verändern Pixel mit lokalen Bildverfahren (u. a. Kantenzeichnung, Quantisierung, Pigment-/Papiertextur, Raster, Neon, Duoton). Sie erzeugen keine neuen semantischen Objekte wie ein generatives Bildmodell. Alle Stile durchlaufen anschließend dieselbe PMDD-Verarbeitung.
+Die Stile verändern Pixel mit lokalen Bildverfahren, unter anderem Kantenzeichnung, Quantisierung, Pigment-/Papiertextur, Raster, Neon und Duoton. Sie erzeugen keine neuen semantischen Objekte wie ein generatives Bildmodell. Anschließend durchlaufen sie dieselbe PMDD-Verarbeitung.
 
-## PMDD und Betrachterbewegung
+</details>
 
-**PMDD-Foto:** Ein statisches Einzelbild mit Tiefenstaffelung, lokaler Kontrastarchitektur, ruhigen Ankern, atmosphärischer Trennung und objektgebundenen Bewegungshinweisen. Blickwechsel können subjektive Bewegung verstärken. Die Wirkung ist motiv-, display- und betrachterabhängig und nicht bei jedem Foto gleich stark.
+---
 
-**Interaktive Ansicht:** Eine zusätzliche, tatsächlich auf Bewegung reagierende 2.5D-Ansicht in der App. Die Frontkamera erfasst Position und relative Größe des Gesichts, ohne Aufnahmen zu speichern. Das Neigen des Geräts steuert zwei Achsen; näher/weiter lässt sich dort per Pinch steuern. Nur die Kopfsteuerung reagiert auf Kopfbewegung vor einem ruhenden Gerät. PNG/JPEG enthalten diese Interaktion nicht.
+## PMDD & interaktive Tiefe
 
-Ein einzelnes Foto liefert keine echten verdeckten Rückseiten oder metrisch gemessene 3D-Geometrie. MiDaS schätzt relative Tiefe. Große Blickwinkel können Kanten dehnen; die Bewegung ist deshalb begrenzt. Die Ebenenzahl beschreibt die Abtastung im interaktiven Viewer, nicht 64 automatisch ausgeschnittene semantische Objekte. SSD-MobileNet erkennt bis zu 20 Objektbereiche aus 80 COCO-Klassen zusätzlich zu Gesichtern; weitere Bereiche können manuell ergänzt werden. Die allgemeinen Objektfelder sind weich und tiefengeführt, keine universell pixelgenaue Segmentierung.
+**PMDD-Foto:** Ein statisches Einzelbild mit Tiefenstaffelung, lokaler Kontrastarchitektur, stabilen Ankern, atmosphärischer Trennung und objektgebundenen Bewegungshinweisen. Die wahrgenommene Wirkung hängt von Motiv, Display und Betrachtungsbedingungen ab.
 
-## PMDD-Herkunft
+**Interaktiver Viewer:** Eine zusätzliche 2.5D-Ansicht reagiert tatsächlich auf Touch, Geräteneigung und optional auf die relative Kopfposition vor der Frontkamera. Die Kopfsteuerung speichert keine Kameraaufnahme. Statische PNG/JPEG-Exporte enthalten diese Interaktion nicht.
 
-**PMDD — Perceptual Motion & Depth Design** ist das von **Kolja Werner Schumann (KoSch)** entwickelte Gestaltungsframework. Die Systematisierung entstand im Human-AI-Co-Design mit ChatGPT. PMDDcam übersetzt seine Tiefen- und Bewegungsprinzipien in eine lokale Fotoverarbeitung und ergänzt einen interaktiven Viewer.
+Ein Einzelbild liefert keine metrisch vermessene 3D-Geometrie und keine echten verdeckten Rückseiten. MiDaS schätzt **relative** Tiefe. Die 64 Standardebenen beschreiben die Viewer-Abtastung, nicht 64 automatisch freigestellte semantische Objekte.
 
-[Die Geschichte und Wahrnehmungsarchitektur von PMDD](https://kosch.cloud/blog/pmdd---die-magie-hinter-der-illusion--wie-wahrnehmung-und-ki-zu-lebendigen-bildern-verschmelzen) · [kosch.cloud](https://kosch.cloud) · [Technische Umsetzung](docs/ARCHITECTURE.md) · [Changelog](CHANGELOG.md)
+---
 
-## Selbst bauen
+## 🌍 Mehrsprachige Web-Frontpage
 
-JDK 17, Android SDK 35, Build Tools 35.0.0. Der Gradle-Wrapper lädt Gradle 8.9 mit Prüfsumme.
+Die ergänzende Web-Frontpage und ihre Unterseiten erkennen die Browsersprache automatisch und unterstützen mindestens:
+
+**Deutsch · English · Français · Español · 中文 · 日本語**
+
+- [Übersicht / Overview — Auto-detect](https://raw.githack.com/chekento/PMDDcam/main/docs/index.html)
+- [Funktionen / Features — Auto-detect](https://raw.githack.com/chekento/PMDDcam/main/docs/features.html)
+- [Technik / Technology — Auto-detect](https://raw.githack.com/chekento/PMDDcam/main/docs/technology.html)
+
+GitHub-README-Dateien führen aus Sicherheitsgründen kein JavaScript aus. Deshalb bietet die native Repository-Frontpage zusätzlich die sechs direkten Sprachlinks am Seitenanfang; die verlinkte Web-Frontpage übernimmt die automatische Spracherkennung.
+
+---
+
+## Vom Foto zum PMDD-Projekt
+
+1. Foto aufnehmen oder ein vorhandenes Bild importieren.
+2. Original unverändert im privaten Projektspeicher sichern.
+3. Relative Tiefe lokal mit MiDaS schätzen; Objektbereiche mit SSD-MobileNet und ML Kit ergänzen.
+4. PMDD standardmäßig mit 64 Viewer-Ebenen und 85 % Tiefenstärke rendern.
+5. Stil, Licht, Tiefe, Bewegungsidentitäten und lokale Bereiche nachträglich bearbeiten.
+6. Statisches PNG/JPEG oder vollständiges Projekt mit Original, Tiefenkarte und Rezept exportieren.
+
+Die Sammlung bleibt im privaten App-Speicher über Neustarts und kompatible Updates erhalten. Für ein externes Backup **„Bearbeitbares PMDD-Projekt“** exportieren. Eine Deinstallation entfernt den privaten App-Speicher.
+
+---
+
+## Technik, Build & Grenzen
+
+<details>
+<summary><strong>Technische Details anzeigen</strong></summary>
+
+### Lokale Modelle
+
+- **MiDaS v2.1 Small** für relative Tiefenschätzung aus einem Einzelbild
+- **SSD-MobileNet** für bis zu 20 erkannte Bereiche aus 80 COCO-Klassen
+- **ML Kit** für Gesichter und Personenmaske
+- **ONNX Runtime** für lokale Inferenz
+
+### Selbst bauen
+
+Voraussetzungen: JDK 17, Android SDK 35, Build Tools 35.0.0.
 
 ```sh
 bash scripts/fetch-model.sh
 ./gradlew testDebugUnitTest lintDebug assembleRelease
 ```
 
-Beide ONNX-Modelle werden nur **beim Build** aus den offiziellen MiDaS- bzw. ONNX-Model-Zoo-Veröffentlichungen geladen und SHA-256-geprüft. Auf dem Smartphone werden sie aus der APK verwendet. APK: `app/build/outputs/apk/release/app-release.apk`.
+Die ONNX-Modelle werden beim Build aus ihren Veröffentlichungsquellen geladen und SHA-256-geprüft. Auf dem Smartphone laufen sie anschließend aus der APK.
 
-Die Preview verwendet einen absichtlich öffentlichen Entwicklungsschlüssel in `signing/`, damit Updates derselben Preview installierbar bleiben. Dieser Schlüssel ist keine private Produktionssignatur. Für Play Store/Produktion eine eigene Signing-Konfiguration nutzen.
+### Preview-Signatur
 
-## Prüfungen und Grenzen der Preview
+Die Preview nutzt einen absichtlich öffentlichen Entwicklungsschlüssel in `signing/`, damit kompatible Preview-Updates installierbar bleiben. Für eine Produktion-/Play-Store-Veröffentlichung ist eine eigene Signatur erforderlich.
 
-Die CI prüft Rezepte, Grenzwerte, konstante/ungültige Tiefenwerte, 60 unterschiedliche Stilresultate, vollständig abschaltbare Stilmischung, glatte Flächen ohne künstliche Schatten/Wellen, wirksame hohe Reglerwerte, deterministisches Rendering, unveränderte Originalbytes, Archive, lokalen Modelllauf einschließlich bekannter Hunde-Erkennungen, echte CameraX-Aufnahme über die virtuelle Kamera, Vollbild-Aufnahmeausschnitt, Original-Umschalter, Pop-up-Menüs, Stilwechsel und Activity-Neustart auf einem Android-35-Emulator im Flugmodus (WLAN und mobile Daten aus). Reale Kameraqualität, Latenz und die subjektive PMDD-Wirkung müssen zusätzlich auf echten Geräten und mit unterschiedlichen Fotos beurteilt werden. Export bis 4096 Pixel längste Kante; bei kleinem App-Heap maximal 2048 Pixel. Originale behalten ihre ursprünglichen Bytes und Auflösung.
+### Grenzen
 
-MiDaS, SSD-MobileNet-Modell und ONNX Runtime: MIT. AndroidX/Kotlin: jeweilige Apache-2.0-Lizenzen. ML Kit: Google-Bedingungen. Hinweise in [THIRD_PARTY.txt](app/src/main/assets/THIRD_PARTY.txt). Für den eigenen App-Quellcode wurde keine zusätzliche Open-Source-Lizenz festgelegt.
+Große virtuelle Blickwinkel können bei monokular geschätzter Tiefe Kanten dehnen. Export: bis 4096 Pixel längste Kante, bei kleinem App-Heap maximal 2048 Pixel. Reale Kameraqualität, Latenz und subjektive PMDD-Wirkung müssen zusätzlich auf physischen Geräten und mit unterschiedlichen Motiven geprüft werden.
+
+</details>
+
+[Technische Architektur](docs/ARCHITECTURE.md) · [Changelog](CHANGELOG.md) · [Third-party notices](app/src/main/assets/THIRD_PARTY.txt)
+
+---
+
+## PMDD-Herkunft
+
+**PMDD — Perceptual Motion & Depth Design** ist das von **Kolja Werner Schumann (KoSch)** entwickelte Gestaltungsframework. Die Systematisierung entstand im Human-AI-Co-Design mit ChatGPT. PMDDcam überträgt seine Tiefen- und Bewegungsprinzipien auf eine lokale Android-Fotoverarbeitung und einen interaktiven Viewer.
+
+[PMDD: Geschichte & Wahrnehmungsarchitektur](https://kosch.cloud/blog/pmdd---die-magie-hinter-der-illusion--wie-wahrnehmung-und-ki-zu-lebendigen-bildern-verschmelzen) · [kosch.cloud](https://kosch.cloud)
+
+---
+
+## Lizenzhinweis
+
+Das Repository ist öffentlich einsehbar. Für den eigenen PMDDcam-App-Quellcode ist derzeit **keine zusätzliche Open-Source-Lizenz festgelegt**; daraus entsteht nicht automatisch eine allgemeine Wiederverwendungserlaubnis. MiDaS, SSD-MobileNet und ONNX Runtime sowie AndroidX/Kotlin/ML Kit unterliegen ihren jeweiligen Drittanbieterbedingungen; siehe [THIRD_PARTY.txt](app/src/main/assets/THIRD_PARTY.txt).
