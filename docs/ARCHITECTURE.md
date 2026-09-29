@@ -35,7 +35,7 @@ MiDaS v2.1 Small ONNX, 256×256 RGB NCHW [0,1]. Die offizielle ONNX-Datei enthä
 
 Modelldatei: https://github.com/isl-org/MiDaS/releases/download/v2_1/model-small.onnx
 
-SHA-256: `f319b72b1d6fc28097b1d6474a467d76aa44c156af283b752eb9c325a88a8af1`
+SHA-256: `2d8c6cb8f415229daf1eb041024208e2608c9f98e17c81cc7c6ecb449c56fd58`
 
 Vorverarbeitung: https://github.com/isl-org/MiDaS/blob/master/tf/run_onnx.py
 

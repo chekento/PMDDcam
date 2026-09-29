@@ -6,6 +6,10 @@ import android.graphics.*
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.Until
+import java.io.File
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Test
@@ -30,11 +34,33 @@ class DeviceTest {
         store.thumbnail(p.id,rendered.image);assertArrayEquals(bytes,store.original(p.id).readBytes());assertTrue(store.load(p.id).ready)
         rendered.image.recycle();photo.recycle()
     }
-    @Test fun nativeActivityLaunchesAndRecreates() {
+    @Test fun nativeActivityLaunchesEditsAndRecreates() {
         val instrumentation=InstrumentationRegistry.getInstrumentation()
         instrumentation.uiAutomation.executeShellCommand("pm grant ${instrumentation.targetContext.packageName} ${Manifest.permission.CAMERA}").close()
+        val context=instrumentation.targetContext
+        val store=ProjectStore(context);val p=store.create(Recipe())
+        val b=Bitmap.createBitmap(320,480,Bitmap.Config.ARGB_8888)
+        val c=Canvas(b);val paint=Paint(Paint.ANTI_ALIAS_FLAG)
+        paint.shader=LinearGradient(0f,0f,320f,480f,Color.rgb(17,48,84),Color.rgb(85,190,155),Shader.TileMode.CLAMP);c.drawPaint(paint);paint.shader=null
+        paint.color=Color.rgb(188,168,243);c.drawCircle(200f,285f,75f,paint);paint.color=Color.rgb(246,213,130);c.drawCircle(95f,180f,45f,paint)
+        store.original(p.id).outputStream().use{b.compress(Bitmap.CompressFormat.PNG,100,it)}
+        val d=DepthMap(64,64,FloatArray(4096){i->(i/64)/63f});store.saveDepth(p.id,d);store.saveDepth(p.id,d,true);store.thumbnail(p.id,b);p.ready=true;store.save(p);b.recycle()
+        val device=UiDevice.getInstance(instrumentation)
+        fun click(text:String){val obj=device.wait(Until.findObject(By.text(text)),30_000);assertNotNull("Missing UI: $text",obj);obj.click();device.waitForIdle()}
+        fun shot(name:String){device.takeScreenshot(File(context.getExternalFilesDir(null),name))}
         ActivityScenario.launch<MainActivity>(Intent(instrumentation.targetContext,MainActivity::class.java)).use{scenario->
-            scenario.onActivity{assertFalse(it.isFinishing)};scenario.recreate();scenario.onActivity{assertFalse(it.isFinishing)}
+            scenario.onActivity{assertFalse(it.isFinishing)}
+            assertNotNull(device.wait(Until.findObject(By.text("Sammlung")),20_000));shot("camera.png")
+            click("Sammlung")
+            val card=device.wait(Until.findObject(By.text("64 Layer · weiter bearbeiten")),20_000);assertNotNull(card);card.click()
+            assertNotNull(device.wait(Until.findObject(By.text("Original / PMDD")),30_000))
+            device.wait(Until.gone(By.text("Projekt wird geöffnet …")),30_000);device.waitForIdle();shot("editor.png")
+            click("Betrachtermodus");click("Mit Finger steuern · ziehen / aufziehen")
+            device.swipe(350,500,650,650,20);device.waitForIdle();shot("viewer.png")
+            click("Stile · 60");assertNotNull(device.wait(Until.findObject(By.text("PMDD Natural")),20_000));shot("styles.png");click("Schließen")
+            click("PMDD");click("Tiefe & Ebenen");assertNotNull(device.wait(Until.findObject(By.textStartsWith("Tiefenebenen")),20_000));shot("settings.png");click("Übernehmen")
+            device.waitForIdle();scenario.recreate();scenario.onActivity{assertFalse(it.isFinishing)}
+            assertNotNull(device.wait(Until.findObject(By.text("Original / PMDD")),30_000))
         }
     }
 }

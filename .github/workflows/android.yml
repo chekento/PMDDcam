@@ -80,7 +80,12 @@ jobs:
           arch: x86_64
           profile: pixel_6
           disable-animations: true
-          script: ./gradlew connectedDebugAndroidTest --no-daemon
+          script: bash scripts/device-tests.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: app-screenshots
+          path: screenshots/
       - uses: actions/upload-artifact@v4
         if: always()
         with:
