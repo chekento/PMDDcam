@@ -249,7 +249,7 @@ Unless explicitly stated otherwise, the original software code authored for **PM
 
 This license permits use, modification and redistribution for permitted **noncommercial** purposes. Commercial use is **not licensed** under these terms. This includes, in particular, incorporating the software into commercial products or services, selling it, paid redistribution, or monetizing derivatives without a separate written commercial license from the copyright holder.
 
-**Commercial licensing:** Please obtain a separate written license from **Kolja Werner Schumann** before any commercial use.
+**Commercial licensing & feedback:** Please contact **Kolja Werner Schumann** at [kolja.schumann+PMDDcam@gmail.com](mailto:kolja.schumann+PMDDcam@gmail.com) for feedback, permission requests and separate commercial licensing before any commercial use.
 
 ### Media, logos & promotional assets
 
