@@ -33,4 +33,11 @@ https://www.apache.org/licenses/LICENSE-2.0
 
 Google ML Kit: Google APIs Terms of Service
 https://developers.google.com/ml-kit/terms
-Bundled object detection, face detection and selfie segmentation models.
+Bundled face detection and selfie segmentation models.
+
+SSD MobileNet V1-12 (ONNX Model Zoo)
+https://github.com/onnx/models/tree/main/validated/vision/object_detection_segmentation/ssd-mobilenetv1
+The model entry declares MIT License; the MIT terms above apply.
+Conversion and quantization contributors listed upstream: Shirley Su, mengniwang95,
+yuwenzho, airMeng, ftian1 and hshen14.
+Trained on MS COCO. Model checksum is pinned in scripts/fetch-model.sh.

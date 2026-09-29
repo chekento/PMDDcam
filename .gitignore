@@ -5,6 +5,7 @@ local.properties
 *.keystore
 !signing/pmddcam-preview.keystore
 app/src/main/assets/*.onnx
+app/src/androidTest/assets/dogs.jpg
 *.apk
 *.aab
 .idea/

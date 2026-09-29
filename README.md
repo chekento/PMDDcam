@@ -12,7 +12,7 @@ Android 8.0 oder neuer · ARM64 / ARMv7 / x86_64 · persönliche Preview-Version
 
 1. Foto mit Front- oder Rückkamera aufnehmen oder ein Bild importieren.
 2. Das Original wird zuerst im privaten Projektspeicher gesichert.
-3. Das gebündelte MiDaS-Modell schätzt räumliche Tiefe. ML Kit erkennt Objektbereiche und Gesichter; eine Personenmaske unterstützt die Tiefentrennung.
+3. Das gebündelte MiDaS-Modell schätzt räumliche Tiefe. Das ebenfalls gebündelte SSD-MobileNet erkennt Objektbereiche aus 80 Klassen. ML Kit ergänzt Gesichter und eine Personenmaske.
 4. PMDDcam verarbeitet das Foto automatisch mit **64 Tiefenebenen und 85 % Tiefenstärke**.
 5. Stil, Licht, Tiefe und lokale Bewegungsidentitäten nachträglich ändern. Das Original wird nie überschrieben.
 6. Ein statisches PNG/JPEG oder ein vollständig bearbeitbares Projekt mit Original, Tiefenkarte und Rezept exportieren.
@@ -57,7 +57,7 @@ Die Stile verändern Pixel mit lokalen Bildverfahren (u. a. Kantenzeichnung, Qua
 
 **Interaktive Ansicht:** Eine zusätzliche, tatsächlich auf Bewegung reagierende 2.5D-Ansicht in der App. Die Frontkamera erfasst Position und relative Größe des Gesichts, ohne Aufnahmen zu speichern. Das Neigen des Geräts steuert zwei Achsen; näher/weiter lässt sich dort per Pinch steuern. Nur die Kopfsteuerung reagiert auf Kopfbewegung vor einem ruhenden Gerät. PNG/JPEG enthalten diese Interaktion nicht.
 
-Ein einzelnes Foto liefert keine echten verdeckten Rückseiten oder metrisch gemessene 3D-Geometrie. MiDaS schätzt relative Tiefe. Große Blickwinkel können Kanten dehnen; die Bewegung ist deshalb begrenzt. Die Ebenenzahl beschreibt die Tiefenstufen des Feldes, nicht 64 automatisch ausgeschnittene semantische Objekte. ML Kit erkennt bis zu fünf allgemeine Objektbereiche zusätzlich zu Gesichtern; weitere Bereiche können manuell ergänzt werden. Die allgemeinen Objektfelder sind weich und tiefengeführt, keine universell pixelgenaue Segmentierung.
+Ein einzelnes Foto liefert keine echten verdeckten Rückseiten oder metrisch gemessene 3D-Geometrie. MiDaS schätzt relative Tiefe. Große Blickwinkel können Kanten dehnen; die Bewegung ist deshalb begrenzt. Die Ebenenzahl beschreibt die Tiefenstufen des Feldes, nicht 64 automatisch ausgeschnittene semantische Objekte. SSD-MobileNet erkennt bis zu 20 Objektbereiche aus 80 COCO-Klassen zusätzlich zu Gesichtern; weitere Bereiche können manuell ergänzt werden. Die allgemeinen Objektfelder sind weich und tiefengeführt, keine universell pixelgenaue Segmentierung.
 
 ## PMDD-Herkunft
 
@@ -74,12 +74,12 @@ bash scripts/fetch-model.sh
 ./gradlew testDebugUnitTest lintDebug assembleRelease
 ```
 
-Das Modell wird nur **beim Build** von der offiziellen MiDaS-Veröffentlichung geladen und SHA-256-geprüft. Auf dem Smartphone wird es aus der APK verwendet. APK: `app/build/outputs/apk/release/app-release.apk`.
+Beide ONNX-Modelle werden nur **beim Build** aus den offiziellen MiDaS- bzw. ONNX-Model-Zoo-Veröffentlichungen geladen und SHA-256-geprüft. Auf dem Smartphone werden sie aus der APK verwendet. APK: `app/build/outputs/apk/release/app-release.apk`.
 
 Die Preview verwendet einen absichtlich öffentlichen Entwicklungsschlüssel in `signing/`, damit Updates derselben Preview installierbar bleiben. Dieser Schlüssel ist keine private Produktionssignatur. Für Play Store/Produktion eine eigene Signing-Konfiguration nutzen.
 
 ## Prüfungen und Grenzen der Preview
 
-Die CI prüft Rezepte, Grenzwerte, konstante/ungültige Tiefenwerte, 60 unterschiedliche Stilresultate, deterministisches Rendering, unveränderte Originalbytes, Archive, lokalen Modelllauf, echte CameraX-Aufnahme über die virtuelle Kamera, Stilwechsel und Activity-Neustart auf einem Android-35-Emulator. Reale Kameraqualität, Latenz und die subjektive PMDD-Wirkung müssen zusätzlich auf echten Geräten und mit unterschiedlichen Fotos beurteilt werden. Export bis 4096 Pixel längste Kante; bei kleinem App-Heap maximal 2048 Pixel. Originale behalten ihre ursprünglichen Bytes und Auflösung.
+Die CI prüft Rezepte, Grenzwerte, konstante/ungültige Tiefenwerte, 60 unterschiedliche Stilresultate, deterministisches Rendering, unveränderte Originalbytes, Archive, lokalen Modelllauf einschließlich bekannter Hunde-Erkennungen, echte CameraX-Aufnahme über die virtuelle Kamera, Stilwechsel und Activity-Neustart auf einem Android-35-Emulator. Reale Kameraqualität, Latenz und die subjektive PMDD-Wirkung müssen zusätzlich auf echten Geräten und mit unterschiedlichen Fotos beurteilt werden. Export bis 4096 Pixel längste Kante; bei kleinem App-Heap maximal 2048 Pixel. Originale behalten ihre ursprünglichen Bytes und Auflösung.
 
-MiDaS und ONNX Runtime: MIT. AndroidX/Kotlin: jeweilige Apache-2.0-Lizenzen. ML Kit: Google-Bedingungen. Hinweise in [THIRD_PARTY.txt](app/src/main/assets/THIRD_PARTY.txt). Für den eigenen App-Quellcode wurde keine zusätzliche Open-Source-Lizenz festgelegt.
+MiDaS, SSD-MobileNet-Modell und ONNX Runtime: MIT. AndroidX/Kotlin: jeweilige Apache-2.0-Lizenzen. ML Kit: Google-Bedingungen. Hinweise in [THIRD_PARTY.txt](app/src/main/assets/THIRD_PARTY.txt). Für den eigenen App-Quellcode wurde keine zusätzliche Open-Source-Lizenz festgelegt.

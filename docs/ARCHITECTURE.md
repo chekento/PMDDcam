@@ -39,7 +39,7 @@ SHA-256: `2d8c6cb8f415229daf1eb041024208e2608c9f98e17c81cc7c6ecb449c56fd58`
 
 Vorverarbeitung: https://github.com/isl-org/MiDaS/blob/master/tf/run_onnx.py
 
-Die gebündelten ML-Kit-Modelle ergänzen allgemeine Objektbereiche, Gesichtsanker und eine Personenmaske. Fehlende Teilanalysen werden sichtbar gemeldet; eine fehlgeschlagene Tiefeninferenz wird nicht durch eine erfundene KI-Tiefenkarte ersetzt.
+SSD-MobileNet V1-12 (ONNX Model Zoo, MIT) ist ebenfalls fest eingebaut: 300×300 uint8 RGB NHWC, 80 COCO-Klassen, bis zu 20 Bereiche ab 40 % Modellkonfidenz. Die Ausgabe enthält normierte Y/X-Rahmen. SHA-256: `b8fba5e404077d4048d27fcd1667e85e27e192eb9bf51e696c46a3acd7d21058`, Größe 29.461.455 Bytes. Anders als die dynamisch nachgeladene ML-Kit-Objekterkennung benötigt dieser Pfad keine Play-Services-Modulinstallation. Die gebündelten ML-Kit-Modelle ergänzen Gesichtsanker und eine Personenmaske. Fehlende Teilanalysen werden sichtbar gemeldet; eine fehlgeschlagene Tiefeninferenz wird nicht durch eine erfundene KI-Tiefenkarte ersetzt.
 
 ## Ressourcen und Datenschutz
 

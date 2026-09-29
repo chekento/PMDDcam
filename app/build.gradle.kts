@@ -44,7 +44,6 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.4.2")
     implementation("androidx.camera:camera-view:1.4.2")
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.22.0")
-    implementation("com.google.mlkit:object-detection:17.0.2")
     implementation("com.google.mlkit:segmentation-selfie:16.0.0-beta6")
     implementation("com.google.mlkit:face-detection:16.1.7")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")

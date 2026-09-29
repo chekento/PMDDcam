@@ -24,14 +24,12 @@ class DeviceTest {
     @Test fun bundledModelAndProjectPipelineWorkOnDevice()=runBlocking {
         val context=InstrumentationRegistry.getInstrumentation().targetContext
         val store=ProjectStore(context);val p=store.create(Recipe())
-        val photo=Bitmap.createBitmap(384,512,Bitmap.Config.ARGB_8888)
-        val canvas=Canvas(photo);val paint=Paint(Paint.ANTI_ALIAS_FLAG)
-        paint.shader=LinearGradient(0f,0f,384f,512f,Color.rgb(40,90,130),Color.rgb(200,170,100),Shader.TileMode.CLAMP);canvas.drawPaint(paint);paint.shader=null
-        paint.color=Color.rgb(230,85,50);canvas.drawCircle(230f,300f,95f,paint);paint.color=Color.rgb(30,80,50);canvas.drawRect(25f,120f,90f,390f,paint)
+        val photo=InstrumentationRegistry.getInstrumentation().context.assets.open("dogs.jpg").use{BitmapFactory.decodeStream(it)}!!
         store.original(p.id).outputStream().use{assertTrue(photo.compress(Bitmap.CompressFormat.JPEG,95,it))}
         val bytes=store.original(p.id).readBytes()
         val analysis=SceneAnalyzer(context).analyze(photo,true){}
         assertEquals("Every bundled detector initializes offline", "", analysis.note)
+        assertTrue("The detector recognizes the dogs in the reference photo",analysis.objects.count{it.name.startsWith("Hund ·")}>=2)
         assertEquals(256,analysis.depth.width);assertTrue(analysis.depth.values.all{it.isFinite()&&it in 0f..1f})
         assertTrue(analysis.depth.values.max()-analysis.depth.values.min()>.5f)
         p.objects=analysis.objects;p.ready=true;store.saveDepth(p.id,analysis.depth,true);store.saveDepth(p.id,analysis.depth);store.save(p)

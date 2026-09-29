@@ -4,8 +4,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import ai.onnxruntime.*
 import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.objects.ObjectDetection
-import com.google.mlkit.vision.objects.defaults.ObjectDetectorOptions
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetectorOptions
 import com.google.mlkit.vision.segmentation.Segmentation
@@ -29,16 +27,9 @@ class SceneAnalyzer(private val context:Context) {
         if(detect) {
             status("Objekte und stabile Gesichter werden erkannt …")
             val input=InputImage.fromBitmap(bitmap,0)
-            val detector=ObjectDetection.getClient(ObjectDetectorOptions.Builder().setDetectorMode(ObjectDetectorOptions.SINGLE_IMAGE_MODE).enableMultipleObjects().enableClassification().build())
             try {
-                val found=detector.process(input).await()
-                found.forEachIndexed{i,o->
-                    val b=o.boundingBox;val label=o.labels.maxByOrNull{it.confidence}?.text?:"Objekt ${i+1}"
-                    val cx=b.exactCenterX()/bitmap.width;val cy=b.exactCenterY()/bitmap.height
-                    objects+=SceneObject(i,label,b.left.toFloat()/bitmap.width,b.top.toFloat()/bitmap.height,b.right.toFloat()/bitmap.width,b.bottom.toFloat()/bitmap.height,
-                        Role.ANCHOR,depth=depth.sample(cx,cy))
-                }
-            } catch(e:CancellationException){throw e} catch(e:Exception){notes+="Objekterkennung nicht verfügbar; Bereiche lassen sich manuell ergänzen."} finally {detector.close()}
+                objects+=ObjectAnalyzer(context).detect(bitmap,depth)
+            } catch(e:CancellationException){throw e} catch(e:Exception){notes+="Objekterkennung nicht verfügbar; Bereiche lassen sich manuell ergänzen."}
             val faces=FaceDetection.getClient(FaceDetectorOptions.Builder().setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST).build())
             try {
                 faces.process(input).await().forEachIndexed{i,f->
