@@ -31,6 +31,7 @@ class DeviceTest {
         store.original(p.id).outputStream().use{assertTrue(photo.compress(Bitmap.CompressFormat.JPEG,95,it))}
         val bytes=store.original(p.id).readBytes()
         val analysis=SceneAnalyzer(context).analyze(photo,true){}
+        assertEquals("Every bundled detector initializes offline", "", analysis.note)
         assertEquals(256,analysis.depth.width);assertTrue(analysis.depth.values.all{it.isFinite()&&it in 0f..1f})
         assertTrue(analysis.depth.values.max()-analysis.depth.values.min()>.5f)
         p.objects=analysis.objects;p.ready=true;store.saveDepth(p.id,analysis.depth,true);store.saveDepth(p.id,analysis.depth);store.save(p)
