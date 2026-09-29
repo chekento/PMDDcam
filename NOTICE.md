@@ -10,6 +10,8 @@ SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 
 Commercial use is not granted by that license. A separate written commercial license from Kolja Werner Schumann is required for commercial use.
 
+Feedback and licensing contact: kolja.schumann+PMDDcam@gmail.com
+
 License text: LICENSE
 License reference: https://polyformproject.org/licenses/noncommercial/1.0.0/
 
