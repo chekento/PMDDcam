@@ -5,6 +5,7 @@
 - Dynamisch geladene Objekterkennung durch fest eingebautes SSD-MobileNet mit 80 Klassen ersetzen.
 - Offline-Initialisierung aller Modelle und tatsächliche Hunde-Erkennung mit Referenzfoto absichern.
 - Emulatortests im Flugmodus mit ausgeschaltetem WLAN und mobilen Daten ausführen.
+- Test-APKs vor dem Emulatorstart kompilieren; einen blockierenden Quickstep-Dialog gezielt behandeln und vollständige Gerätediagnosen sichern. Kamera-, Offline- und Originalerhalt-Prüfungen bleiben verpflichtend.
 
 ## 0.1.1 · 29.09.2026 · Android Preview
 

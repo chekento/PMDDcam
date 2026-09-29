@@ -69,6 +69,9 @@ jobs:
           log-accepted-android-sdk-licenses: false
       - uses: gradle/actions/setup-gradle@v4
       - run: bash scripts/fetch-model.sh
+      - name: Compile test APKs before starting the emulator
+        # Avoid competing with Android's first boot for CPU and memory.
+        run: ./gradlew assembleDebug assembleDebugAndroidTest --no-daemon
       - name: Enable emulator acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules

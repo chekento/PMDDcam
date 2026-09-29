@@ -3,6 +3,7 @@ package cloud.kosch.pmddcam
 import android.Manifest
 import android.content.Intent
 import android.graphics.*
+import android.os.SystemClock
 import android.view.View
 import android.view.ViewGroup
 import androidx.camera.view.PreviewView
@@ -10,7 +11,9 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.uiautomator.By
+import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.Until
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -45,8 +48,8 @@ class DeviceTest {
         device.executeShellCommand("pm grant ${instrumentation.targetContext.packageName} ${Manifest.permission.CAMERA}")
         val context=instrumentation.targetContext
         val store=ProjectStore(context);val existing=store.list().map{it.id}.toSet()
-        fun click(text:String){val obj=device.wait(Until.findObject(By.text(text)),30_000);assertNotNull("Missing UI: $text",obj);obj.click();device.waitForIdle()}
-        fun dialogButton(id:String){val obj=device.wait(Until.findObject(By.res("android",id)),20_000);assertNotNull("Missing dialog button: $id",obj);obj.click();device.waitForIdle()}
+        fun click(text:String){awaitUi(device,By.text(text),30_000,"button: $text").click();device.waitForIdle()}
+        fun dialogButton(id:String){awaitUi(device,By.res("android",id),20_000,"dialog button: $id").click();device.waitForIdle()}
         // Shell-owned evidence survives Gradle uninstalling the test application.
         fun shot(name:String){
             device.executeShellCommand("mkdir -p /sdcard/Download/pmddcam-tests")
@@ -64,21 +67,41 @@ class DeviceTest {
                 val preview=cameraView(activity.window.decorView);assertNotNull("Camera preview exists",preview)
                 preview!!.previewStreamState.observe(activity){if(it==PreviewView.StreamState.STREAMING)streaming.countDown()}
             }
-            assertTrue("Camera produces preview frames",streaming.await(30,TimeUnit.SECONDS));shot("camera.png")
-            val shutter=device.wait(Until.findObject(By.desc("Foto aufnehmen")),20_000);assertNotNull(shutter);shutter.click()
-            assertNotNull(device.wait(Until.findObject(By.text("Original / PMDD")),90_000))
-            device.wait(Until.gone(By.text("Abbrechen · Original behalten")),30_000);device.waitForIdle();shot("editor.png")
+            assertTrue("Camera produces preview frames",streaming.await(30,TimeUnit.SECONDS))
+            val shutter=awaitUi(device,By.desc("Foto aufnehmen"),20_000,"camera shutter");shot("camera.png");shutter.click()
+            awaitUi(device,By.text("Original / PMDD"),90_000,"captured photo editor")
+            assertTrue("Initial PMDD render finishes",device.wait(Until.gone(By.text("Abbrechen · Original behalten")),30_000));device.waitForIdle();shot("editor.png")
             val captured=store.list().single{it.id !in existing};assertTrue(captured.ready)
             val original=store.original(captured.id).readBytes();assertTrue("Full captured original exists",original.size>1000)
             click("Betrachtermodus");click("Mit Finger steuern · ziehen / aufziehen")
             device.swipe(350,500,650,650,20);device.waitForIdle();shot("viewer.png")
-            click("Stile · 60");assertNotNull(device.wait(Until.findObject(By.text("PMDD Natural")),20_000));shot("styles.png");dialogButton("button2")
+            click("Stile · 60");awaitUi(device,By.text("PMDD Natural"),20_000,"style previews");shot("styles.png");dialogButton("button2")
             click("Stile · 60");click("Cinematic")
-            click("PMDD");click("Tiefe & Ebenen");assertNotNull(device.wait(Until.findObject(By.textStartsWith("Tiefenebenen")),20_000));shot("settings.png");dialogButton("button1")
+            click("PMDD");click("Tiefe & Ebenen");awaitUi(device,By.textStartsWith("Tiefenebenen"),20_000,"depth settings");shot("settings.png");dialogButton("button1")
             device.waitForIdle();scenario.recreate();scenario.onActivity{assertFalse(it.isFinishing)}
-            assertNotNull(device.wait(Until.findObject(By.text("Original / PMDD")),30_000))
-            assertNotNull(device.wait(Until.findObject(By.textStartsWith("Cinematic  ·")),30_000))
+            awaitUi(device,By.text("Original / PMDD"),30_000,"restored editor")
+            awaitUi(device,By.textStartsWith("Cinematic  ·"),30_000,"persisted Cinematic style")
             assertArrayEquals("Editing preserves the camera original",original,store.original(captured.id).readBytes())
         }
+    }
+
+    private fun awaitUi(device:UiDevice,selector:BySelector,timeout:Long,description:String):UiObject2 {
+        val deadline=SystemClock.uptimeMillis()+timeout
+        do {
+            // API 35 emulator cold boots can leave a Quickstep ANR over our activity.
+            // Recover only this exact external launcher dialog, never a PMDDcam ANR.
+            if(device.hasObject(By.pkg("android").text("Quickstep isn't responding"))){
+                val close=device.findObject(By.res("android","aerr_close"))
+                if(close!=null){
+                    device.executeShellCommand("mkdir -p /sdcard/Download/pmddcam-tests")
+                    device.executeShellCommand("screencap -p /sdcard/Download/pmddcam-tests/launcher-anr.png")
+                    android.util.Log.w("PMDDcamDeviceTest","Closing external Quickstep ANR; app assertions remain active")
+                    close.click();device.waitForIdle()
+                }
+            }
+            device.findObject(selector)?.let{return it}
+            SystemClock.sleep(100)
+        } while(SystemClock.uptimeMillis()<deadline)
+        throw AssertionError("Missing UI: $description (foreground: ${device.currentPackageName})")
     }
 }
