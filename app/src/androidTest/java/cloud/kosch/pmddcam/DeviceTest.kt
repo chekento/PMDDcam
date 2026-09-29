@@ -2,6 +2,9 @@ package cloud.kosch.pmddcam
 
 import android.Manifest
 import android.content.Intent
+import android.content.ContentValues
+import android.os.Build
+import android.provider.MediaStore
 import android.graphics.*
 import android.os.SystemClock
 import android.view.View
@@ -15,7 +18,6 @@ import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.Until
-import java.io.File
 import kotlin.math.abs
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -43,11 +45,19 @@ class DeviceTest {
         val rendered=PmddRenderer.render(photo,analysis.depth,p);assertEquals(photo.width,rendered.image.width)
         store.thumbnail(p.id,rendered.image);assertArrayEquals(bytes,store.original(p.id).readBytes());assertTrue(store.load(p.id).ready)
         fun evidence(name:String,image:Bitmap){
-            val file=File(context.cacheDir,"qa-$name.png")
-            file.outputStream().use{assertTrue(image.compress(Bitmap.CompressFormat.PNG,100,it))}
-            device.executeShellCommand("mkdir -p /sdcard/Download/pmddcam-tests")
-            device.executeShellCommand("run-as ${context.packageName} cat ${file.absolutePath} > /sdcard/Download/pmddcam-tests/qa-$name.png")
-            file.delete()
+            if(Build.VERSION.SDK_INT>=29){
+                val values=ContentValues().apply{
+                    put(MediaStore.MediaColumns.DISPLAY_NAME,"qa-$name.png")
+                    put(MediaStore.MediaColumns.MIME_TYPE,"image/png")
+                    put(MediaStore.MediaColumns.RELATIVE_PATH,"Download/pmddcam-tests")
+                    put(MediaStore.MediaColumns.IS_PENDING,1)
+                }
+                val resolver=context.contentResolver
+                val uri=requireNotNull(resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI,values))
+                requireNotNull(resolver.openOutputStream(uri)).use{assertTrue(image.compress(Bitmap.CompressFormat.PNG,100,it))}
+                resolver.update(uri,ContentValues().apply{put(MediaStore.MediaColumns.IS_PENDING,0)},null,null)
+                assertTrue("Missing rendered photo evidence",device.executeShellCommand("ls -s /sdcard/Download/pmddcam-tests/qa-$name.png").trim().substringBefore(' ').toLongOrNull()?.let{it>0}==true)
+            }
         }
         evidence("original",photo);evidence("natural",rendered.image)
         rendered.image.recycle()
@@ -115,6 +125,11 @@ class DeviceTest {
     private fun awaitUi(device:UiDevice,selector:BySelector,timeout:Long,description:String):UiObject2 {
         val deadline=SystemClock.uptimeMillis()+timeout
         do {
+            // Android shows this one-time education overlay on the first immersive screen.
+            if(device.hasObject(By.pkg("android").text("Viewing full screen"))){
+                val confirm=device.findObject(By.res("android","ok"))
+                if(confirm!=null){confirm.click();device.waitForIdle();continue}
+            }
             // API 35 emulator cold boots can leave a Quickstep ANR over our activity.
             // Recover only this exact external launcher dialog, never a PMDDcam ANR.
             if(device.hasObject(By.pkg("android").text("Quickstep isn't responding"))){
