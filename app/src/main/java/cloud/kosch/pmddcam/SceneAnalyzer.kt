@@ -12,6 +12,8 @@ import com.google.mlkit.vision.segmentation.Segmentation
 import com.google.mlkit.vision.segmentation.selfie.SelfieSegmenterOptions
 import kotlinx.coroutines.*
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.File
 import java.nio.FloatBuffer
 import kotlin.math.*
@@ -19,7 +21,7 @@ import kotlin.math.*
 data class Analysis(val depth:DepthMap,val objects:MutableList<SceneObject>,val note:String)
 
 class SceneAnalyzer(private val context:Context) {
-    suspend fun analyze(bitmap:Bitmap,detect:Boolean,status:(String)->Unit):Analysis = withContext(Dispatchers.Default) {
+    suspend fun analyze(bitmap:Bitmap,detect:Boolean,status:(String)->Unit):Analysis = analysisMutex.withLock { withContext(Dispatchers.Default) {
         status("Räumliche Tiefe wird erkannt …")
         val depth=infer(bitmap)
         ensureActive()
@@ -60,7 +62,9 @@ class SceneAnalyzer(private val context:Context) {
         }
         objects.add(0,SceneObject(999,"Atmosphärische Ferne",0f,0f,1f,1f,Role.ATMOSPHERE,Motion.DRIFT,25f,.3f,.45f,.18f))
         Analysis(depth,objects,notes.joinToString(" "))
-    }
+    } }
+
+    companion object { private val analysisMutex=Mutex() }
 
     private fun infer(bitmap:Bitmap):DepthMap {
         val model=File(context.noBackupFilesDir,"midas-small-v21.onnx")

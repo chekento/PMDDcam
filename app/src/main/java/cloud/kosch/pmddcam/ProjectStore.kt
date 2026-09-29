@@ -93,7 +93,7 @@ class ProjectStore(private val context:Context) {
             val id=UUID.randomUUID().toString()
             val p=old.copy(id=id,created=System.currentTimeMillis())
             require(temporary.renameTo(File(root,id))){"Projekt konnte nicht wiederhergestellt werden."}
-            if(p.ready)runCatching{depth(id)}.onFailure{p.ready=false;p.note="Tiefenkarte wird neu analysiert."}
+            if(p.ready)runCatching{depth(id);depth(id,true)}.onFailure{p.ready=false;p.note="Tiefenkarte wird neu analysiert."}
             save(p);return p
         } finally {temporary.deleteRecursively()}
     }

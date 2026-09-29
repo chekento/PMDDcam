@@ -30,6 +30,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.*
+import kotlin.coroutines.resume
 
 class MainActivity:ComponentActivity(),SensorEventListener {
     private val backgroundColor=Color.rgb(11,16,24)
@@ -66,21 +67,24 @@ class MainActivity:ComponentActivity(),SensorEventListener {
     private val undo=ArrayDeque<Pair<Project,DepthMap>>()
     private val redo=ArrayDeque<Pair<Project,DepthMap>>()
     private var exportKind="png"
+    private var pendingExport:Uri?=null
     private var originalShown=false
     private var captureEpoch=0
     private var analysisNote=""
+    private var styleCaption:TextView?=null
     private val pickPhoto=registerForActivityResult(ActivityResultContracts.OpenDocument()){uri->if(uri!=null)importPhoto(uri)}
     private val pickProject=registerForActivityResult(ActivityResultContracts.OpenDocument()){uri->if(uri!=null)runTask("Projekt wird wiederhergestellt …"){
         val p=withContext(Dispatchers.IO){store.restore(uri)};openProject(p)
     }}
-    private val saveFile=registerForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")){uri->if(uri!=null)exportTo(uri)}
+    private val saveFile=registerForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")){uri->if(uri!=null){pendingExport=uri;resumeExport()}}
     private var afterPermission:(()->Unit)?=null
     private val permission=registerForActivityResult(ActivityResultContracts.RequestPermission()){granted->
         if(granted)afterPermission?.invoke() else{setStatus("Kamerazugriff fehlt. Fotoimport ist weiterhin möglich.");message("Du kannst ein vorhandenes Foto importieren oder die Kamera später in den Android-Einstellungen freigeben.")};afterPermission=null
     }
 
-    override fun onCreate(state:Bundle?){
-        super.onCreate(state)
+    override fun onCreate(savedInstanceState:Bundle?){
+        super.onCreate(savedInstanceState)
+        val state=savedInstanceState
         store=ProjectStore(applicationContext)
         exportKind=state?.getString("exportKind")?:"png"
         root=column().apply{setBackgroundColor(backgroundColor)}
@@ -105,7 +109,7 @@ class MainActivity:ComponentActivity(),SensorEventListener {
         val last=state?.getString("project")
         if(last!=null)runTask("Projekt wird geöffnet …"){openProject(withContext(Dispatchers.IO){store.load(last)})} else showCamera()
     }
-    override fun onSaveInstanceState(out:Bundle){out.putString("project",if(page=="editor")project?.id else null);out.putString("exportKind",exportKind);super.onSaveInstanceState(out)}
+    override fun onSaveInstanceState(outState:Bundle){outState.putString("project",if(page=="editor")project?.id else null);outState.putString("exportKind",exportKind);super.onSaveInstanceState(outState)}
     private fun defaults()=runCatching{Recipe.from(JSONObject(prefs.getString("defaults","{}")!!))}.getOrDefault(Recipe())
     private fun runTask(text:String,block:suspend CoroutineScope.()->Unit){
         if(task?.isActive==true)return
@@ -113,7 +117,7 @@ class MainActivity:ComponentActivity(),SensorEventListener {
             busyLabel.text=text;busy.visibility=View.VISIBLE
             try{block()}catch(e:CancellationException){throw e}catch(e:OutOfMemoryError){message("Zu wenig Arbeitsspeicher. Das Original bleibt erhalten. Bitte eine kleinere Ausgabe wählen.")}
             catch(e:Exception){message(e.message?:"Dieser Schritt konnte nicht abgeschlossen werden. Das Original bleibt erhalten.");if(page=="editor"&&viewer==null)showLibrary()}
-            finally{busy.visibility=View.GONE}
+            finally{busy.visibility=View.GONE;root.post{resumeExport()}}
         }
     }
     private fun setStatus(text:String){runOnUiThread{status.text=text}}
@@ -178,7 +182,7 @@ class MainActivity:ComponentActivity(),SensorEventListener {
             val output=ImageCapture.OutputFileOptions.Builder(store.original(p.id)).build()
             suspendCancellableCoroutine<Unit>{continuation->
                 cap.takePicture(output,ContextCompat.getMainExecutor(this@MainActivity),object:ImageCapture.OnImageSavedCallback{
-                    override fun onImageSaved(out:ImageCapture.OutputFileResults){if(continuation.isActive)continuation.resume(Unit){}}
+                    override fun onImageSaved(out:ImageCapture.OutputFileResults){if(continuation.isActive)continuation.resume(Unit)}
                     override fun onError(e:ImageCaptureException){if(continuation.isActive)continuation.resumeWith(Result.failure(e))}
                 })
             }
@@ -211,9 +215,10 @@ class MainActivity:ComponentActivity(),SensorEventListener {
         val compare=row()
         compare.addView(button("Original / PMDD"){originalShown=!originalShown;showCurrentImage()},LinearLayout.LayoutParams(0,dp(48),1f))
         compare.addView(button("Betrachtermodus"){viewerDialog()},LinearLayout.LayoutParams(0,dp(48),1f));layout.addView(compare)
-        layout.addView(label("${Styles.get(p.recipe.style).name}  ·  Original dauerhaft im Projekt",12f,muted).apply{setPadding(dp(4),dp(10),0,dp(8))})
+        styleCaption=label("${Styles.get(p.recipe.style).name}  ·  Original dauerhaft im Projekt",12f,muted).apply{setPadding(dp(4),dp(10),0,dp(8))}
+        layout.addView(styleCaption)
         content.addView(layout,FrameLayout.LayoutParams(-1,-1))
-        nav("Kamera"){showCamera()};nav("Stile · 60"){stylesDialog()};nav("PMDD"){settingsDialog(p.recipe.copy())};nav("Objekte"){objectsDialog()};nav("Tiefe malen"){paintDepth()};nav("Export"){exportDialog()};nav("Sammlung"){showLibrary()}
+        nav("Kamera"){showCamera()};nav("Stile · 60"){stylesDialog()};nav("PMDD"){project?.recipe?.copy()?.let{settingsDialog(it)}};nav("Objekte"){objectsDialog()};nav("Tiefe malen"){paintDepth()};nav("Export"){exportDialog()};nav("Sammlung"){showLibrary()}
         setStatus("${p.recipe.layers} Ebenen · Tiefe ${(p.recipe.depth*100).roundToInt()} % · ${p.objects.count{it.id!=999}} Bereiche")
     }
     private fun snapshot(){val p=project?:return;val d=depth?:return;undo.addLast(p.snapshot() to d.copy());if(undo.size>20)undo.removeFirst();redo.clear()}
@@ -231,6 +236,7 @@ class MainActivity:ComponentActivity(),SensorEventListener {
         val next=withContext(Dispatchers.Default){PmddRenderer.render(src,d,p)}
         currentCoroutineContext().ensureActive()
         result?.image?.recycle();result=next
+        styleCaption?.text="${Styles.get(p.recipe.style).name}  ·  Original dauerhaft im Projekt"
         showCurrentImage()
         withContext(Dispatchers.IO){store.thumbnail(p.id,next.image)}
         setStatus(if(analysisNote.isNotBlank())analysisNote else "${p.recipe.layers} Ebenen · Tiefe ${(p.recipe.depth*100).roundToInt()} % · ${Styles.get(p.recipe.style).name}")
@@ -414,6 +420,10 @@ class MainActivity:ComponentActivity(),SensorEventListener {
                 }}
             };message("Gespeichert.")
         }
+    }
+    private fun resumeExport(){
+        if(project==null || depth==null || task?.isActive==true)return
+        val uri=pendingExport?:return;pendingExport=null;exportTo(uri)
     }
     private fun shareImage(){val p=project?.snapshot()?:return
         runTask("Bild zum Teilen wird erstellt …"){
