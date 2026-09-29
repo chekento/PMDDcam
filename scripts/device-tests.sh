@@ -2,7 +2,7 @@
 set -euo pipefail
 collect() {
   mkdir -p screenshots
-  adb pull /sdcard/Android/data/cloud.kosch.pmddcam/files/ screenshots/ || true
+  adb pull /sdcard/Download/pmddcam-tests/ screenshots/ || true
   adb logcat -d -s AndroidRuntime > screenshots/runtime-log.txt || true
 }
 trap collect EXIT

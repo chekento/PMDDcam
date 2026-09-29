@@ -9,7 +9,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
-import java.io.File
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Test
@@ -47,7 +46,13 @@ class DeviceTest {
         val d=DepthMap(64,64,FloatArray(4096){i->(i/64)/63f});store.saveDepth(p.id,d);store.saveDepth(p.id,d,true);store.thumbnail(p.id,b);p.ready=true;store.save(p);b.recycle()
         val device=UiDevice.getInstance(instrumentation)
         fun click(text:String){val obj=device.wait(Until.findObject(By.text(text)),30_000);assertNotNull("Missing UI: $text",obj);obj.click();device.waitForIdle()}
-        fun shot(name:String){device.takeScreenshot(File(context.getExternalFilesDir(null),name))}
+        fun dialogButton(id:String){val obj=device.wait(Until.findObject(By.res("android",id)),20_000);assertNotNull("Missing dialog button: $id",obj);obj.click();device.waitForIdle()}
+        // Shell-owned evidence survives Gradle uninstalling the test application.
+        fun shot(name:String){
+            device.executeShellCommand("mkdir -p /sdcard/Download/pmddcam-tests")
+            device.executeShellCommand("screencap -p /sdcard/Download/pmddcam-tests/$name")
+            assertTrue("Missing screenshot: $name",device.executeShellCommand("ls -s /sdcard/Download/pmddcam-tests/$name").trim().substringBefore(' ').toLongOrNull()?.let{it>0}==true)
+        }
         ActivityScenario.launch<MainActivity>(Intent(instrumentation.targetContext,MainActivity::class.java)).use{scenario->
             scenario.onActivity{assertFalse(it.isFinishing)}
             assertNotNull(device.wait(Until.findObject(By.text("Sammlung")),20_000));shot("camera.png")
@@ -57,8 +62,8 @@ class DeviceTest {
             device.wait(Until.gone(By.text("Projekt wird geöffnet …")),30_000);device.waitForIdle();shot("editor.png")
             click("Betrachtermodus");click("Mit Finger steuern · ziehen / aufziehen")
             device.swipe(350,500,650,650,20);device.waitForIdle();shot("viewer.png")
-            click("Stile · 60");assertNotNull(device.wait(Until.findObject(By.text("PMDD Natural")),20_000));shot("styles.png");click("Schließen")
-            click("PMDD");click("Tiefe & Ebenen");assertNotNull(device.wait(Until.findObject(By.textStartsWith("Tiefenebenen")),20_000));shot("settings.png");click("Übernehmen")
+            click("Stile · 60");assertNotNull(device.wait(Until.findObject(By.text("PMDD Natural")),20_000));shot("styles.png");dialogButton("button2")
+            click("PMDD");click("Tiefe & Ebenen");assertNotNull(device.wait(Until.findObject(By.textStartsWith("Tiefenebenen")),20_000));shot("settings.png");dialogButton("button1")
             device.waitForIdle();scenario.recreate();scenario.onActivity{assertFalse(it.isFinishing)}
             assertNotNull(device.wait(Until.findObject(By.text("Original / PMDD")),30_000))
         }
