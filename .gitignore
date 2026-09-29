@@ -1,0 +1,11 @@
+.gradle/
+**/build/
+local.properties
+*.jks
+*.keystore
+!signing/pmddcam-preview.keystore
+app/src/main/assets/*.onnx
+*.apk
+*.aab
+.idea/
+captures/
