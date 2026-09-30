@@ -1,5 +1,11 @@
 # Änderungen
 
+## 0.3.1 · 30.09.2026 · Kleine Objekte
+
+- Zusätzlich zum Gesamtbild bis zu sechs Detailausschnitte analysieren, damit kleine Fahrzeuge und Tiere auch in hochkant aufgenommenen Fotos erkannt werden können. Doppelte Treffer zusammenführen, weiterhin höchstens 20 Objektbereiche.
+- Ein Modell und ein Eingabepuffer pro Analyse; Abbruch zwischen den Durchläufen möglich. Alle Modelle bleiben offline.
+- Regressionen für Koordinatenrückrechnung und doppelte bzw. benachbarte Treffer.
+
 ## 0.3.0 · 30.09.2026 · PMDD Vivid
 
 - Neuer Standardstil PMDD Vivid mit kantenbewusster Schattenaufhellung, kräftigeren Farben, geschützten Lichtern und lokaler Zeichnung. Die bisherigen 60 Stile bleiben verfügbar (61 insgesamt).

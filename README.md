@@ -7,7 +7,7 @@
 **Fotografiere einen tieferen Raum. · Photograph a deeper space.**
 
 [![Android Build](https://github.com/chekento/PMDDcam/actions/workflows/android.yml/badge.svg)](https://github.com/chekento/PMDDcam/actions/workflows/android.yml)
-![Version](https://img.shields.io/badge/preview-v0.3.0-19d3ae)
+![Version](https://img.shields.io/badge/preview-v0.3.1-19d3ae)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)
 ![Processing](https://img.shields.io/badge/photo_processing-on--device-19d3ae)
 ![Cloud](https://img.shields.io/badge/photo_uploads-none-25343c)
@@ -33,18 +33,18 @@
 
 ## 📲 Android Preview herunterladen
 
-<a href="https://github.com/chekento/PMDDcam/releases/download/v0.3.0/PMDDcam-0.3.0.apk">
+<a href="https://github.com/chekento/PMDDcam/releases/download/v0.3.1/PMDDcam-0.3.1.apk">
   <img src="docs/assets/pmddcam-apk-download.webp" alt="Download PMDDcam APK for Android" width="100%">
 </a>
 
 <div align="center">
 
-### [⬇ PMDDcam 0.3.0 · APK direkt herunterladen](https://github.com/chekento/PMDDcam/releases/download/v0.3.0/PMDDcam-0.3.0.apk)
+### [⬇ PMDDcam 0.3.1 · APK direkt herunterladen](https://github.com/chekento/PMDDcam/releases/download/v0.3.1/PMDDcam-0.3.1.apk)
 
 Android 8.0+ · ARM64 / ARMv7 / x86_64 · Preview · ca. 229 MB  
-**SHA-256:** [SHA256SUMS.txt](https://github.com/chekento/PMDDcam/releases/download/v0.3.0/SHA256SUMS.txt)
+**SHA-256:** [SHA256SUMS.txt](https://github.com/chekento/PMDDcam/releases/download/v0.3.1/SHA256SUMS.txt)
 
-[Release & Prüfsumme](https://github.com/chekento/PMDDcam/releases/tag/v0.3.0) ·
+[Release & Prüfsumme](https://github.com/chekento/PMDDcam/releases/tag/v0.3.1) ·
 [Builds](https://github.com/chekento/PMDDcam/actions) ·
 [Changelog](CHANGELOG.md)
 
@@ -126,7 +126,9 @@ PMDDcam verbindet eine native Android-Kamera mit **PMDD 4.0 — Perceptual Motio
 | 💾 Export | PNG, JPEG, Original, Tiefenkarte und vollständig bearbeitbares ZIP-Projekt |
 | 🔒 Privatsphäre | Lokale Verarbeitung, keine Foto-Uploads, kein Cloudkonto, keine App-Internetberechtigung |
 
-### Neu in 0.3.0
+### Neu in 0.3.1
+
+Kleine Objekte werden zusätzlich in bis zu sechs Detailausschnitten gesucht; doppelte Treffer werden zusammengeführt.
 
 - **PMDD Vivid** als kräftiger fotografischer Standard: gezielte Schattenaufhellung, lebendigere Farben, erhaltene Lichter und lokale Zeichnung
 - deutlich weniger milchiger Dunst und begrenzte Kontrastverstärkung an harten Kanten
