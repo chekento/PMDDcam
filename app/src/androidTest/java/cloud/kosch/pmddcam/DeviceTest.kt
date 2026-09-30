@@ -65,7 +65,7 @@ class DeviceTest {
         }
         evidence("original",photo);evidence("vivid",rendered.image)
         rendered.image.recycle()
-        for(style in listOf("natural","comic","watercolor","cinema","futuretech","gameboy")){
+        for(style in listOf("natural","comic","watercolor","oil","cinema","futuretech","gameboy","risocomic","pointillism","thermal")){
             val sample=p.snapshot().apply{recipe.style=style;recipe.styleMix=1f;if(style=="natural"){recipe.depth=2.5f;recipe.motionAmount=2f}}
             val image=PmddRenderer.render(photo,analysis.depth,sample).image;evidence(if(style=="natural")"maximum" else style,image);image.recycle()
         }
@@ -128,7 +128,7 @@ class DeviceTest {
             click("Original ↔ PMDD");awaitUi(device,By.text("PMDD Vivid"),20_000,"PMDD is selected again")
             icon("Betrachtermodus");click("Mit Finger steuern · ziehen / aufziehen")
             device.swipe(350,500,650,650,20);device.waitForIdle();shot("viewer.png")
-            click("Looks");awaitUi(device,By.text("61 Stile · alle mit PMDD"),20_000,"style previews");shot("styles.png");dialogButton("button2")
+            click("Looks");awaitUi(device,By.text("80 Stile · alle mit PMDD"),20_000,"style previews");shot("styles.png");dialogButton("button2")
             click("Looks");click("Cinematic")
             click("Werkzeuge");awaitUi(device,By.text("Tiefe malen"),20_000,"readable tool popup");shot("tools.png");device.pressBack()
             click("PMDD");awaitUi(device,By.text("Tiefe & Ebenen"),20_000,"readable PMDD popup");shot("pmdd-menu.png");click("Tiefe & Ebenen");awaitUi(device,By.textStartsWith("Tiefenebenen"),20_000,"depth settings");shot("settings.png");dialogButton("button1")
@@ -146,15 +146,15 @@ class DeviceTest {
             if(x in 30..86&&y in 25..92){if((x/5+y/7)%2==0)0xffffaa20.toInt() else 0xff3d9250.toInt()}
             else if((x/12+y/12)%2==0)0xff293c7e.toInt() else 0xffa4c7e2.toInt()},128,128,Bitmap.Config.ARGB_8888)
         val depth=DepthMap(64,64,FloatArray(4096){i->if(i%64 in 15..43&&i/64 in 12..46).85f else .18f})
-        val objects=listOf(SceneObject(1,"Moving foreground",.23f,.18f,.69f,.74f,Role.DYNAMIC,Motion.DRIFT,15f,.7f,.9f,.85f))
+        val objects=listOf(SceneObject(1,"Moving foreground",.23f,.18f,.69f,.74f,Role.DYNAMIC,Motion.DRIFT,15f,.7f,.9f,.85f),SceneObject(2,"Stable anchor",.28f,.3f,.4f,.65f,Role.ANCHOR,depth=.85f))
         ActivityScenario.launch<MainActivity>(Intent(instrumentation.targetContext,MainActivity::class.java)).use{scenario->
             lateinit var view:DepthViewer
             scenario.onActivity{activity->view=DepthViewer(activity);activity.setContentView(view);view.setImage(image,depth,Recipe(),objects);view.active=true}
             fun awaitFrame(count:Int){val deadline=SystemClock.uptimeMillis()+10_000;while(view.completedFrames<count&&SystemClock.uptimeMillis()<deadline)SystemClock.sleep(20);assertTrue("GL frame completes",view.completedFrames>=count)}
             awaitFrame(1)
-            fun frame(x:Float,y:Float,z:Float,active:Boolean=true):Bitmap{
+            fun frame(x:Float,y:Float,z:Float,active:Boolean=true,time:Float=0f):Bitmap{
                 val previous=view.completedFrames
-                scenario.onActivity{view.active=active;view.setPosition(x,y,z)};awaitFrame(previous+1)
+                scenario.onActivity{view.animationTimeOverride=time;view.active=active;view.setPosition(x,y,z)};awaitFrame(previous+1)
                 // A second draw ensures PixelCopy sees the requested position after buffer swap.
                 val next=view.completedFrames;view.requestRender();awaitFrame(next+1)
                 val result=Bitmap.createBitmap(192,192,Bitmap.Config.ARGB_8888);val done=CountDownLatch(1);var code=-1
@@ -167,9 +167,24 @@ class DeviceTest {
                 val moved=frame(position[0],position[1],position[2]);assertTrue("$name changes rendered pixels",difference(center,moved)>.2)
                 device.executeShellCommand("mkdir -p /sdcard/Download/pmddcam-tests");device.executeShellCommand("screencap -p /sdcard/Download/pmddcam-tests/axis-$name.png");moved.recycle()
             }
-            val fixed=frame(.85f,-.85f,.85f,false)
+            val animated=frame(0f,0f,0f,time=3f)
+            assertTrue("Object animation changes pixels even with a stationary viewpoint",difference(center,animated)>.2)
+            val screenRatio=view.width.toFloat()/view.height
+            val anchorX=(192*.34f).toInt();val anchorY=(192*(.5f+(.475f-.5f)*screenRatio)).toInt()
+            assertEquals("A protected anchor must stay still during autonomous animation",center.getPixel(anchorX,anchorY),animated.getPixel(anchorX,anchorY))
+            assertEquals("Background outside object masks must stay still",center.getPixel(15,96),animated.getPixel(15,96))
+            device.executeShellCommand("screencap -p /sdcard/Download/pmddcam-tests/animation-active.png")
+            animated.recycle()
+            scenario.onActivity{view.recipe=view.recipe.copy(animateObjects=false)}
+            val disabled=frame(0f,0f,0f,time=3f);assertTrue("Animation can be disabled independently",difference(center,disabled)<.02);disabled.recycle()
+            scenario.onActivity{view.recipe=view.recipe.copy(animateObjects=true)}
+            val fixed=frame(.85f,-.85f,.85f,false,time=3f)
             assertTrue("Static output does not follow simulated head positions",difference(center,fixed)<.02)
-            fixed.recycle();center.recycle();scenario.onActivity{view.release();view.onPause()}
+            fixed.recycle();center.recycle()
+            scenario.onActivity{view.active=true;view.animationTimeOverride=null;view.onPause()}
+            val paused=view.completedFrames;SystemClock.sleep(150);assertEquals("Paused viewer stops rendering animation",paused,view.completedFrames)
+            scenario.onActivity{view.onResume()};awaitFrame(paused+1)
+            scenario.onActivity{view.release();view.onPause()}
         };image.recycle()
     }
 

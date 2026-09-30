@@ -1,4 +1,4 @@
-# PMDDcam 0.3.1 – Umsetzung
+# PMDDcam 0.4.0 – Umsetzung
 
 ## Datenfluss
 
@@ -76,3 +76,10 @@ Keine Cloud-Verarbeitung und keine Internetberechtigung. Fotos und Betrachterkam
 ## Bewusste Grenzen
 
 Die App erzeugt lokale Stiltransformationen, keine generativen Neukompositionen. Eine wissenschaftlich validierte Garantie einer Bewegungsillusion ist nicht implementiert. Besonders glatte, unscharfe oder kontrastarme Motive können schwächer wirken. Verdeckte Objektseiten, große Perspektivänderungen und neue semantische Sekundärbewegungen benötigen zusätzliche Bilddaten oder ein generatives Modell. Diese Fähigkeiten werden in der Preview nicht behauptet.
+
+
+## Looks und Animation ab 0.4.0
+
+`PainterlyField` berechnet kantenbewusste Farbflächen mit vier lokalen Varianzfenstern (Kuwahara) auf maximal 720 Pixel langer Kante. Integralbilder begrenzen Kosten und Speicher. `LightField` streut erkannte Fotokanten bzw. Lichter für Neon/Bloom auf maximal 512 Pixel. Neue Verfahren und 19 zusätzliche Rezepte ergeben 80 Looks. Stark stilisierte Ausgaben unterdrücken die Rückmischung roher Fotodetails durch Schärfung und Bokeh; `styleMix=0` bleibt für alle Looks wirkungslos. Bestehende Stil-IDs bleiben erhalten.
+
+Die Rezeptfelder `animateObjects`, `animationAmount` und `animationSpeed` sind unabhängig von statischen Kontrasthinweisen. Eine vierte GL-Textur enthält Frequenz, Phase und objektgrößenabhängige Auslenkung; Richtung/Stärke bleiben in der bisherigen Bewegungstextur. Die Animation läuft mit bis zu 30 angeforderten Frames/s nur im aktiven Viewer und nur bei beweglichen Bereichen. Pause/Detach/Release stoppen den Frame-Takt. Objektgebundene Abtastverschiebungen ersetzen keine vollständige 3D-Rekonstruktion; große Auslenkungen bleiben deshalb begrenzt. Exportierte PNG/JPEG enthalten keine zeitliche Animation.

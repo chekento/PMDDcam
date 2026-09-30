@@ -1,5 +1,15 @@
 # Änderungen
 
+## 0.4.0 · 01.10.2026 · Lebendige Objekte & 80 Looks
+
+- Eigenständige, laufende Objektanimation im interaktiven Betrachter: Stärke und Tempo separat regelbar, unterschiedliche Phasen und Geschwindigkeiten je Objekt, langsamere Atmosphäre. Bewegungsweg an Objektgröße begrenzt, feste Anker und geschützte Gesichter ausgespart. Bei Pause, Originalvergleich und statischer Ansicht stoppt die Animation.
+- Statische Bewegungshinweise auch in der Bildmitte stärker erhalten. Die Wahrnehmungswirkung bleibt abhängig von Motiv und Betrachtung; zeitliche Animation ist nur im Viewer vorhanden.
+- Comic/Cel mit geglätteten Farbflächen und klaren Konturen; Manga mit Grauraster. Aquarell mit Pigmentflächen und Papier, Öl mit größeren Farbfeldern und Pinselstruktur, Bleistift mit Tonwertschraffur.
+- Neon mit räumlich auslaufendem Kantenschein; Druckstile mit farbigen Rasterplatten; Retro mit festen Pixelblöcken und Paletten. PMDD-Schärfung und Unschärfe mischen keine unpassenden Fotodetails mehr in stark stilisierte Flächen zurück.
+- 19 zusätzliche Looks: Slide Film, Bleach Bypass, Dramatic B&W, Soft Bloom, Comic Noir, Flat Cel, Poster Pop, Linolschnitt, Sumi-e, Kreidepastell, Dry Brush, Pointillismus, CGA 4, C64 16, CRT Arcade, Thermal Vision, Neon Wire, Sunset Rose und Dream Bloom. Thermal ist ein Helligkeits-Falschfarbenlook, keine Temperaturmessung.
+- Look-Karten erklären ihre Wirkung; Auswahl und Vorschau verwenden volle Stilmischung, anschließend bleibt die Stärke einstellbar. Alle bestehenden Stil-IDs und Projekte bleiben lesbar.
+- Tests für Vierfarb-Paletten, Pixelblöcke, Malflächen, Neonränder, Animationsregler sowie GL-Prüfungen für Bewegung bei festem Blick, ruhige Anker, Abschalten und Pause/Fortsetzung.
+
 ## 0.3.1 · 30.09.2026 · Kleine Objekte
 
 - Zusätzlich zum Gesamtbild bis zu sechs Detailausschnitte analysieren, damit kleine Fahrzeuge und Tiere auch in hochkant aufgenommenen Fotos erkannt werden können. Doppelte Treffer zusammenführen, weiterhin höchstens 20 Objektbereiche.

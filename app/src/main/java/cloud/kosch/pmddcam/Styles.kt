@@ -1,11 +1,46 @@
 package cloud.kosch.pmddcam
 
-enum class Technique { PHOTO, COMIC, WATERCOLOR, INK, PENCIL, OIL, PIXEL, HALFTONE, NEON, DUOTONE, HATCH, SOLAR }
+enum class Technique { PHOTO, COMIC, WATERCOLOR, INK, PENCIL, OIL, PIXEL, HALFTONE, NEON, DUOTONE, HATCH, SOLAR, PASTEL, STIPPLE, WOODCUT, POSTER, THERMAL, BLOOM }
 data class PhotoStyle(val id:String,val name:String,val group:String,val technique:Technique,
     val warmth:Float=0f,val saturation:Float=1f,val contrast:Float=1f,val levels:Int=256,
     val tint:Int=0xffb8d4ff.toInt(),val grain:Float=0f,
     val ink:Float=.68f,val lift:Float=0f,val toning:Float=0f,
-    val shadow:Int=0xff142c48.toInt(),val highlight:Int=0xfff2ead8.toInt())
+    val shadow:Int=0xff142c48.toInt(),val highlight:Int=0xfff2ead8.toInt()) {
+    val description:String get()=when(id){
+        "vivid"->"Kräftige Farben · offene Schatten"
+        "manga"->"Schwarze Tusche · Grauraster"
+        "blueprint"->"Weiße Linien · tiefblaues Papier"
+        "gameboy"->"Grobe Pixel · vier Grüntöne"
+        "cga"->"Cyan, Magenta, Weiß und Schwarz"
+        "c64"->"16 feste Farben · sichtbare Pixel"
+        "vhs"->"Farbversatz · weiche Videolinien"
+        "crt"->"Pixelpalette · CRT-Zeilen"
+        "risocomic"->"Zwei Druckfarben · Papierkorn"
+        "futuretech"->"Cyan-Konturen · dunkles Stahlblau"
+        "hologram"->"Blaue Lichtlinien · Scanstruktur"
+        "bleach"->"Entsättigte Farben · harte Tonwerte"
+        else->when(technique){
+            Technique.PHOTO->"Fotografische Farbe · Tonwertabstimmung"
+            Technique.COMIC->"Flächige Farben · gezeichnete Konturen"
+            Technique.WATERCOLOR->"Pigmentflächen · Papier · weiche Lasuren"
+            Technique.OIL->"Breite Farbfelder · plastische Pinseltextur"
+            Technique.INK->"Tuschelinien · reduzierte Schatten"
+            Technique.PENCIL->"Papierzeichnung · feine Schraffur"
+            Technique.HATCH->"Kreuzschraffur · abgestufte Strichdichte"
+            Technique.HALFTONE->"Sichtbares Druckraster · Farbflächen"
+            Technique.PIXEL->"Reduzierte Palette · feste Pixelblöcke"
+            Technique.NEON->"Leuchtende Kanten · dunkle Farbtöne"
+            Technique.DUOTONE->"Zwei Farben · abgestufte Tonwerte"
+            Technique.SOLAR->"Experimentelle Farb- und Tonumkehr"
+            Technique.PASTEL->"Weiche Kreideflächen · raues Papier"
+            Technique.STIPPLE->"Farbpunkte · optische Farbmischung"
+            Technique.WOODCUT->"Schwarze Schnittlinien · helles Papier"
+            Technique.POSTER->"Wenige Vollfarben · plakative Flächen"
+            Technique.THERMAL->"Falschfarben nach Helligkeit"
+            Technique.BLOOM->"Weiches Licht · leuchtende Highlights"
+        }
+    }
+}
 
 object Styles {
     // Each preset changes an actual rendering recipe; PMDD is applied after every style.
@@ -71,7 +106,26 @@ object Styles {
         PhotoStyle("lava","Lava Light","Atmosphäre",Technique.NEON,.25f,1.4f,1.3f,256,0xffff8353.toInt()),
         PhotoStyle("arctic","Arctic Ice","Atmosphäre",Technique.PHOTO,-.26f,.5f,1.02f),
         PhotoStyle("moon","Moonlight","Atmosphäre",Technique.DUOTONE,-.18f,.2f,1.25f,256,0xff7c97c4.toInt()),
-        PhotoStyle("velvet","Velvet Dusk","Atmosphäre",Technique.DUOTONE,.05f,.6f,.87f,256,0xffc58bbf.toInt())
+        PhotoStyle("velvet","Velvet Dusk","Atmosphäre",Technique.DUOTONE,.05f,.6f,.87f,256,0xffc58bbf.toInt()),
+        PhotoStyle("slide","Slide Film","Foto",Technique.PHOTO,.06f,1.34f,1.23f,grain=.12f,toning=.24f),
+        PhotoStyle("bleach","Bleach Bypass","Foto",Technique.PHOTO,-.04f,.32f,1.55f,grain=.11f),
+        PhotoStyle("dramatic","Dramatic B&W","Foto",Technique.PHOTO,0f,0f,1.85f,grain=.05f),
+        PhotoStyle("softbloom","Soft Bloom","Foto",Technique.BLOOM,.08f,.9f,.92f),
+        PhotoStyle("comicnoir","Comic Noir","Illustration",Technique.COMIC,0f,0f,1.55f,3,ink=1f),
+        PhotoStyle("flatcel","Flat Cel","Illustration",Technique.COMIC,.02f,1.3f,1.05f,4,ink=.28f),
+        PhotoStyle("posterpop","Poster Pop","Illustration",Technique.POSTER,0f,1f,1f,5),
+        PhotoStyle("linocut","Linolschnitt","Atelier",Technique.WOODCUT,.08f,0f,1.1f,grain=.1f),
+        PhotoStyle("sumie","Sumi-e","Atelier",Technique.INK,.07f,0f,1f,ink=.8f,lift=.025f),
+        PhotoStyle("chalk","Kreidepastell","Atelier",Technique.PASTEL,.08f,.85f,.9f,12,grain=.22f),
+        PhotoStyle("drybrush","Dry Brush","Atelier",Technique.WATERCOLOR,.12f,.8f,.95f,9,grain=.26f),
+        PhotoStyle("pointillism","Pointillismus","Atelier",Technique.STIPPLE,.07f,1.2f,1.02f,12),
+        PhotoStyle("cga","CGA 4","Retro",Technique.PIXEL,0f,1f,1f,4),
+        PhotoStyle("c64","C64 16","Retro",Technique.PIXEL,0f,1f,1f,16),
+        PhotoStyle("crt","CRT Arcade","Retro",Technique.PIXEL,-.02f,1.1f,1.08f,6),
+        PhotoStyle("thermal","Thermal Vision","Zukunft",Technique.THERMAL,0f,1f,1f),
+        PhotoStyle("neonwire","Neon Wire","Zukunft",Technique.NEON,-.1f,1f,1.12f,tint=0xff45eaff.toInt()),
+        PhotoStyle("sunsetrose","Sunset Rose","Atmosphäre",Technique.DUOTONE,.12f,.9f,1f,shadow=0xff341e62.toInt(),highlight=0xffffcb95.toInt()),
+        PhotoStyle("dreambloom","Dream Bloom","Atmosphäre",Technique.BLOOM,.16f,.65f,.82f,toning=.4f,shadow=0xff895a8f.toInt(),highlight=0xffffd2e1.toInt())
     ).map { s ->
         when(s.id){
             "cinema"->s.copy(shadow=0xff174750.toInt(),highlight=0xffffbd7d.toInt(),toning=.7f)

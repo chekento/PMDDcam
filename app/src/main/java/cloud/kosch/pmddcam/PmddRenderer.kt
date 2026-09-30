@@ -51,6 +51,8 @@ object PmddRenderer {
         val output=IntArray(pixels.size)
         val depth=effectiveDepth(raw,project)
         val guide=GuidedDepth(source,depth)
+        val paint=if(r.styleMix>0f)PainterlyField.create(pixels,width,height,style.technique)else null
+        val light=if(r.styleMix>0f&&style.technique in setOf(Technique.NEON,Technique.BLOOM))LightField.create(pixels,width,height,style.technique==Technique.NEON)else null
         val scene=if(style.id=="vivid" && r.styleMix>0f)SceneTone.create(source) else null
         val objects=project.objects.filter{it.enabled}
         val context=currentCoroutineContext()
@@ -58,9 +60,14 @@ object PmddRenderer {
         val detailStep=max(1,shortEdge/420)
         val gain=r.depth*(.8f+.65f*r.depth)
         val geometry=(r.screenSize/16f*45f/r.viewDistance).coerceIn(.4f,2f)
-        val pixelSize=max(1,shortEdge/if(style.id=="pixel16")180 else 100)
+        val pixelSize=max(2,shortEdge/if(style.id=="pixel16")145 else 82)
+        val artistic=style.technique !in setOf(Technique.PHOTO,Technique.BLOOM)
+        val detailRetention=1-r.styleMix*(if(style.technique==Technique.PIXEL)1f else if(artistic).86f else 0f)
         val printCell=max(2.5f,shortEdge/75f)
         val styleSaturation=if(style.id=="matrix"||style.id=="gameboy"||style.id=="blueprint")1f else style.saturation
+        val cgaPalette=intArrayOf(0xff101018.toInt(),0xff40e8e0.toInt(),0xffee46b6.toInt(),0xfff7f5ee.toInt())
+        val c64Palette=intArrayOf(0xff000000.toInt(),0xffffffff.toInt(),0xff813338.toInt(),0xff75cec8.toInt(),0xff8e3c97.toInt(),0xff56ac4d.toInt(),0xff2e2c9b.toInt(),0xffedf171.toInt(),0xff8e5029.toInt(),0xff553800.toInt(),0xffc46c71.toInt(),0xff4a4a4a.toInt(),0xff7b7b7b.toInt(),0xffa9ff9f.toInt(),0xff706deb.toInt(),0xffb2b2b2.toInt())
+        val posterPalette=intArrayOf(0xff132746.toInt(),0xffe44955.toInt(),0xfff4c84e.toInt(),0xff369da7.toInt(),0xfff7edd7.toInt())
         val pocketPalette=intArrayOf(0xff162b18.toInt(),0xff385c31.toInt(),0xff85a34b.toInt(),0xffd9e995.toInt())
         for(y in 0 until height){
             if(y%16==0)context.ensureActive()
@@ -77,58 +84,107 @@ object PmddRenderer {
                 val paper=noise(x/3,y/3)*.6f+noise(x/11,y/11)*.4f
                 // Range weighting smooths pigment inside surfaces while retaining their outlines.
                 val blend=.76f/(1+abs(detail)*18f)
-                val pr=red+(br-red)*blend;val pg=green+(bg-green)*blend;val pb=blue+(bb-blue)*blend
+                val painted=paint?.color(u,v)
+                val pr=painted?.let{channel(it,16)}?: (red+(br-red)*blend)
+                val pg=painted?.let{channel(it,8)}?: (green+(bg-green)*blend)
+                val pb=painted?.let{channel(it,0)}?: (blue+(bb-blue)*blend)
+                val paintEdge=paint?.edge(u,v)?:edge
+                val pigmentGray=pr*.2126f+pg*.7152f+pb*.0722f
                 var sr=red;var sg=green;var sb=blue
                 when(style.technique){
                     Technique.PHOTO -> Unit
                     Technique.COMIC -> {
-                        val ink=1-MotionMath.smooth(.025f,.19f,edge)*style.ink
-                        sr=softQuant(pr,style.levels)*ink;sg=softQuant(pg,style.levels)*ink;sb=softQuant(pb,style.levels)*ink
+                        val levels=style.levels.coerceIn(3,8)
+                        val ink=1-MotionMath.smooth(.045f,.22f,paintEdge)*style.ink
+                        sr=quant(pr,levels)*ink;sg=quant(pg,levels)*ink;sb=quant(pb,levels)*ink
+                        if(style.id=="manga"){
+                            val cell=max(2f,printCell*.65f);val dot=printDot(x.toFloat(),y.toFloat(),cell,0f,.35f)
+                            val mid=MotionMath.smooth(.18f,.38f,pigmentGray)*(1-MotionMath.smooth(.7f,.85f,pigmentGray))
+                            sr=(quant(pigmentGray,4)*(.98f-dot*mid*.3f))*ink;sg=sr;sb=sr
+                        }
                     }
                     Technique.WATERCOLOR -> {
-                        val pigment=1-MotionMath.smooth(.018f,.2f,edge)*.16f
-                        val grain=paper*.018f*(1-gray)
-                        sr=softQuant(pr,style.levels)*pigment*.89f+.11f+grain
-                        sg=softQuant(pg,style.levels)*pigment*.89f+.11f+grain
-                        sb=softQuant(pb,style.levels)*pigment*.89f+.11f+grain
+                        val pooling=MotionMath.smooth(.025f,.26f,paintEdge)*.2f
+                        val wash=paper*.035f*(.25f+pigmentGray)
+                        val dry=if(style.id=="drybrush")max(0f,noise-.1f)*.20f else 0f
+                        val opacity=.83f-pigmentGray*.08f-dry
+                        sr=softQuant(pr,style.levels)*opacity*(1-pooling)+(1-opacity)*.99f+wash
+                        sg=softQuant(pg,style.levels)*opacity*(1-pooling)+(1-opacity)*.965f+wash
+                        sb=softQuant(pb,style.levels)*opacity*(1-pooling)+(1-opacity)*.91f+wash
                     }
                     Technique.OIL -> {
-                        // Stroke variation follows existing detail, never a global sine overlay.
-                        val stroke=paper*abs(detail)*.18f
-                        sr=softQuant(pr,style.levels)+detail*.2f+stroke
-                        sg=softQuant(pg,style.levels)+detail*.2f+stroke
-                        sb=softQuant(pb,style.levels)+detail*.2f+stroke
+                        val stroke=(noise(x/3,y/8)*.65f+noise(x/11,y/3)*.35f)*.034f
+                        val relief=(pigmentGray-smoothGray).coerceIn(-.15f,.15f)*.35f
+                        sr=quant(pr,style.levels)+stroke+relief;sg=quant(pg,style.levels)+stroke+relief;sb=quant(pb,style.levels)+stroke+relief
                     }
                     Technique.INK -> {
-                        val line=(MotionMath.smooth(.015f,.17f,edge)*.9f+(1-gray)*.08f).coerceIn(0f,1f)
-                        if(style.id=="blueprint"){sr=.025f+line*.83f;sg=.12f+line*.8f;sb=.28f+line*.7f}
-                        else {sr=1-line;sg=sr;sb=sr}
+                        val line=(MotionMath.smooth(.018f,.12f,edge)*.94f+(1-MotionMath.smooth(.12f,.32f,gray))*.65f).coerceIn(0f,1f)
+                        if(style.id=="blueprint"){sr=.025f+line*.91f;sg=.09f+line*.87f;sb=.25f+line*.73f}
+                        else {val brush=if(style.id=="sumie")max(0f,-detail)*.8f else 0f;sr=(1-line-brush).coerceAtLeast(0f);sg=sr;sb=sr}
                     }
                     Technique.PENCIL -> {
-                        val line=(1-MotionMath.smooth(.009f,.18f,edge)*.85f-max(0f,-detail)*1.4f-(1-gray)*.1f+noise*.024f*(1-gray)).coerceIn(0f,1f)
-                        val color=if(style.id=="coloredpencil").6f else .06f
-                        sr=line*(1-color)+red*color;sg=line*(1-color)+green*color;sb=line*(1-color)+blue*color
+                        val hatch=1-MotionMath.smooth(.10f,.30f,abs(sin((x+y)/max(2f,printCell*.38f)*PI.toFloat())))
+                        val graphite=(max(0f,smoothGray-gray)*4.5f+edge*1.65f+(1-gray)*hatch*.36f).coerceIn(0f,.97f)
+                        val line=(.98f-graphite+noise*.035f*(1-gray)).coerceIn(0f,1f)
+                        val color=if(style.id=="coloredpencil").68f else 0f
+                        sr=line*(1-color*(1-red));sg=line*(1-color*(1-green));sb=line*(1-color*(1-blue))
                     }
-                    Technique.HATCH -> {
-                        val line=1-MotionMath.smooth(.03f,.25f,abs(sin((x+y)/printCell*PI.toFloat())))
-                        val cross=1-MotionMath.smooth(.03f,.25f,abs(sin((x-y)/printCell*PI.toFloat())))
-                        val mark=line*MotionMath.smooth(.2f,.8f,1-gray)+cross*MotionMath.smooth(.65f,.95f,1-gray)
-                        val value=(.96f-mark*.6f-edge*.6f+noise*.015f).coerceIn(0f,1f)
+                    Technique.HATCH,Technique.WOODCUT -> {
+                        val cell=if(style.technique==Technique.WOODCUT)printCell*.8f else printCell*.4f
+                        val line=1-MotionMath.smooth(.03f,.28f,abs(sin((x+y)/cell*PI.toFloat())))
+                        val cross=1-MotionMath.smooth(.03f,.25f,abs(sin((x-y)/cell*PI.toFloat())))
+                        val mark=line*MotionMath.smooth(.12f,.68f,1-gray)+cross*MotionMath.smooth(.48f,.86f,1-gray)
+                        val value=if(style.technique==Technique.WOODCUT)(1-MotionMath.smooth(.28f,.48f,mark+edge*2.2f+(1-gray)*.35f))
+                            else (.97f-mark*.72f-edge*.8f+noise*.028f).coerceIn(0f,1f)
                         sr=value;sg=value;sb=value
                     }
                     Technique.HALFTONE -> {
-                        val cx=(x/printCell-floor(x/printCell))-.5f;val cy=(y/printCell-floor(y/printCell))-.5f
-                        val dot=1-MotionMath.smooth((1-gray)*.32f-.025f,(1-gray)*.32f+.025f,cx*cx+cy*cy)
-                        val ink=1-dot*.58f
-                        sr=softQuant(pr,style.levels)*.72f+.28f;sg=softQuant(pg,style.levels)*.72f+.28f;sb=softQuant(pb,style.levels)*.72f+.28f
-                        sr*=ink;sg*=ink;sb*=ink
+                        if(style.id=="newspaper"){
+                            val value=1-printDot(x.toFloat(),y.toFloat(),printCell,.78f,1-gray)*.94f;sr=value;sg=value*.97f;sb=value*.9f
+                        }else if(style.id=="risocomic"){
+                            val redInk=printDot(x.toFloat(),y.toFloat(),printCell,.26f,(1-green)*.86f)
+                            val blueInk=printDot(x.toFloat(),y.toFloat(),printCell,-.52f,(1-red)*.84f)
+                            sr=.98f-blueInk*.76f;sg=.94f-redInk*.66f-blueInk*.27f;sb=.84f-redInk*.36f
+                        }else{
+                            val cyan=printDot(x.toFloat(),y.toFloat(),printCell,.26f,1-pr)
+                            val magenta=printDot(x.toFloat(),y.toFloat(),printCell,1.31f,1-pg)
+                            val yellow=printDot(x.toFloat(),y.toFloat(),printCell,0f,1-pb)
+                            sr=1-cyan*.9f;sg=.98f-magenta*.9f;sb=.92f-yellow*.87f
+                        }
                     }
                     Technique.NEON -> {
-                        val glow=(MotionMath.smooth(.012f,.22f,edge)*.62f+max(0f,detail)*1.3f).coerceIn(0f,.85f)
-                        val base=if(style.id=="hologram").75f else .56f
-                        if(style.id=="matrix"){sr=gray*.035f;sg=gray*.48f;sb=gray*.09f}
-                        else{sr=red*base;sg=green*base;sb=blue*base}
+                        val contour=MotionMath.smooth(.022f,.16f,edge)
+                        val glow=((light?.sample(u,v)?:0f)*2.2f+contour*.7f).coerceIn(0f,1.25f)
+                        val lit=MotionMath.smooth(.35f,.95f,gray)
+                        val base=when(style.id){"neonwire"->.015f;"hologram"->.1f;else->.26f}
+                        sr=red*base;sg=green*base;sb=blue*base
+                        if(style.id=="futuretech"||style.id=="hologram"){sr=gray*.035f;sg=gray*.10f;sb=gray*.19f}
+                        if(style.id=="matrix"){sr=gray*.015f;sg=gray*.18f;sb=gray*.025f}
                         sr+=channel(style.tint,16)*glow;sg+=channel(style.tint,8)*glow;sb+=channel(style.tint,0)*glow
+                        if(style.id=="cyberpunk"||style.id=="neontokyo"){sg+=lit*.13f;sb+=lit*.24f}
+                        if(style.id=="hologram"){val scan=.8f+.2f*cos(y/max(1f,shortEdge/350f)*PI.toFloat());sr*=scan;sg*=scan;sb*=scan}
+                    }
+                    Technique.PASTEL -> {
+                        val tooth=(noise*.55f+paper*.45f)*.07f
+                        sr=softQuant(pr,style.levels)*.83f+.16f+tooth;sg=softQuant(pg,style.levels)*.83f+.15f+tooth;sb=softQuant(pb,style.levels)*.83f+.13f+tooth
+                    }
+                    Technique.STIPPLE -> {
+                        val cell=max(3f,shortEdge/100f);val ix=floor(x/cell).toInt();val iy=floor(y/cell).toInt()
+                        val cx=(ix+.5f+noise(ix,iy)*.16f)*cell;val cy=(iy+.5f+noise(iy,ix)*.16f)*cell
+                        val sample=pixels[cy.toInt().coerceIn(0,height-1)*width+cx.toInt().coerceIn(0,width-1)]
+                        val dot=1-MotionMath.smooth(.30f,.44f,hypot(x-cx,y-cy)/cell)
+                        sr=.97f*(1-dot)+channel(sample,16)*dot;sg=.95f*(1-dot)+channel(sample,8)*dot;sb=.87f*(1-dot)+channel(sample,0)*dot
+                    }
+                    Technique.POSTER -> {
+                        val color=nearestPalette(posterPalette,pr,pg,pb);sr=channel(color,16);sg=channel(color,8);sb=channel(color,0)
+                    }
+                    Technique.THERMAL -> {
+                        val t=gray*4f
+                        sr=(1.5f-abs(t-3f)).coerceIn(0f,1f);sg=(1.5f-abs(t-2f)).coerceIn(0f,1f);sb=(1.5f-abs(t-1f)).coerceIn(0f,1f)
+                    }
+                    Technique.BLOOM -> {
+                        val glow=(light?.sample(u,v)?:0f)*.22f
+                        sr=red+(1-red)*glow;sg=green+(1-green)*glow*.92f;sb=blue+(1-blue)*glow*.85f
                     }
                     Technique.DUOTONE -> {
                         val t=gray.pow(.86f)
@@ -143,8 +199,8 @@ object PmddRenderer {
                     Technique.PIXEL -> {
                         val sample=pixels[(y/pixelSize*pixelSize)*width+x/pixelSize*pixelSize]
                         sr=quant(channel(sample,16),style.levels);sg=quant(channel(sample,8),style.levels);sb=quant(channel(sample,0),style.levels)
-                        if(style.id=="gameboy"){
-                            val color=pocketPalette[(luma(sample)*3).roundToInt().coerceIn(0,3)]
+                        if(style.id=="gameboy"||style.id=="cga"||style.id=="c64"){
+                            val color=if(style.id=="gameboy")pocketPalette[(luma(sample)*3).roundToInt().coerceIn(0,3)] else nearestPalette(if(style.id=="cga")cgaPalette else c64Palette,channel(sample,16),channel(sample,8),channel(sample,0))
                             sr=channel(color,16);sg=channel(color,8);sb=channel(color,0)
                         }
                     }
@@ -171,9 +227,11 @@ object PmddRenderer {
                     val vibrance=1f+.22f*(1-saturation)
                     sr=target+(sr-target)*vibrance;sg=target+(sg-target)*vibrance;sb=target+(sb-target)*vibrance
                 }
+                if(style.id=="crt"){val scan=if(y%pixelSize==0).72f else 1f;sr*=scan;sg*=scan;sb*=scan}
                 if(style.id=="vhs"){
                     sr=channel(pixels[y*width+max(0,x-detailStep)],16)
                     sb=channel(pixels[y*width+min(width-1,x+detailStep)],0)
+                    val scan=if(y%max(2,shortEdge/220)==0).92f else 1f;sr*=scan;sg*=scan;sb*=scan
                 }
                 val sl=sr*.2126f+sg*.7152f+sb*.0722f
                 sr=(sl+(sr-sl)*styleSaturation-.5f)*style.contrast+.5f+style.warmth*.12f
@@ -201,16 +259,16 @@ object PmddRenderer {
                 val detailGain=r.sharpness*(.35f+d*.85f)+r.relief*gain*(.16f+d*.52f)+r.separation*gain*(d-.25f)*.35f
                 // Suppress large step edges rather than outlining every branch with a bright/dark rim.
                 val edgeGuard=1-MotionMath.smooth(.055f,.22f,abs(detail))*.9f
-                val local=(detail*detailGain*edgeGuard).coerceIn(-.09f,.09f)*(1-faceWeight*.8f)
+                val local=(detail*detailGain*edgeGuard*detailRetention).coerceIn(-.09f,.09f)*(1-faceWeight*.8f)
                 // Only deepen shadow detail already in the photograph. No depth-normal emboss.
-                val contact=(min(0f,detail)*r.occlusion*gain*.08f*(.35f+.65f*d)*edgeGuard).coerceAtLeast(-.035f)*(1-faceWeight)
+                val contact=(min(0f,detail)*detailRetention*r.occlusion*gain*.08f*(.35f+.65f*d)*edgeGuard).coerceAtLeast(-.035f)*(1-faceWeight)
                 val contrast=(r.contrast+r.separation*gain*(d-.5f)*.13f).coerceIn(-.5f,.7f)
                 // Depth strength no longer turns atmosphere into an opaque milky veil.
                 val haze=(r.haze*far*(.045f+.02f*r.separation)*min(gain,2.2f)).coerceAtMost(.16f)*(if(scene!=null)1-r.styleMix*.7f else 1f)
-                val focalBlur=(MotionMath.smooth(0f,.7f,r.focus-d)*r.bokeh*(.18f+.16f*gain)*(1-edge*2).coerceIn(.2f,1f)).coerceAtMost(.8f)
+                val focalBlur=(detailRetention*MotionMath.smooth(0f,.7f,r.focus-d)*r.bokeh*(.18f+.16f*gain)*(1-edge*2).coerceIn(.2f,1f)).coerceAtMost(.8f)
                 sr=sr*(1-focalBlur)+br*focalBlur;sg=sg*(1-focalBlur)+bg*focalBlur;sb=sb*(1-focalBlur)+bb*focalBlur
                 val radial=sqrt((u-.5f).pow(2)+(v-.5f).pow(2))*1.414f
-                val periphery=(1-r.peripheral)+r.peripheral*MotionMath.smooth(.15f,.75f,radial)
+                val periphery=.55f+.45f*((1-r.peripheral)+r.peripheral*MotionMath.smooth(.15f,.75f,radial))
                 val structure=MotionMath.smooth(.015f,.1f,abs(detail)+edge*.35f)
                 // An asymmetric local edge sequence follows the object's direction. No periodic overlay.
                 var directionalCue=0f
@@ -224,8 +282,8 @@ object PmddRenderer {
                 val motionGain=r.motionAmount*(.65f+.45f*r.motionAmount)
                 val illusion=(directionalCue*motionWeight*motionGain*structure*periphery*(1-stability)*
                     ((1-r.depthCoupling)+r.depthCoupling*(.45f+d*.55f))*geometry).coerceIn(-.13f,.13f)
-                val micro=detail*noise*r.texture*.12f*d*(1-faceWeight)
-                val tone=local+contact+illusion+micro+r.exposure*.3f-r.vignette*radial.pow(2)*.22f
+                val micro=detail*detailRetention*noise*r.texture*.12f*d*(1-faceWeight)
+                val tone=local+contact+illusion*detailRetention+micro+r.exposure*.3f-r.vignette*radial.pow(2)*.22f
                 sr=depthTone(sr,contrast,tone);sg=depthTone(sg,contrast,tone);sb=depthTone(sb,contrast,tone)
                 sr=sr*(1-haze)+.8f*haze;sg=sg*(1-haze)+.87f*haze;sb=sb*(1-haze)+.94f*haze
                 val lum=sr*.2126f+sg*.7152f+sb*.0722f
@@ -298,6 +356,16 @@ object PmddRenderer {
         val curved=t+contrast*(t-.5f)*4f*t*(1-t)
         val headroom=if(tone>0f)min(1f,(1-curved)*3f) else min(1f,curved*3f)
         return curved+tone*headroom
+    }
+    private fun printDot(x:Float,y:Float,cell:Float,angle:Float,density:Float):Float {
+        val u=(x*cos(angle)-y*sin(angle))/cell;val v=(x*sin(angle)+y*cos(angle))/cell
+        val a=u-floor(u)-.5f;val b=v-floor(v)-.5f;val radius=sqrt(density.coerceIn(0f,1f))*.71f
+        return 1-MotionMath.smooth(radius-.035f,radius+.035f,hypot(a,b))
+    }
+    private fun nearestPalette(palette:IntArray,r:Float,g:Float,b:Float):Int {
+        var best=palette[0];var distance=Float.MAX_VALUE
+        for(c in palette){val d=(r-channel(c,16)).pow(2)*.3f+(g-channel(c,8)).pow(2)*.59f+(b-channel(c,0)).pow(2)*.11f;if(d<distance){distance=d;best=c}}
+        return best
     }
     private fun channel(c:Int,shift:Int)=((c shr shift)and 255)/255f
     private fun luma(c:Int)=( ((c shr 16)and 255)*.2126f+((c shr 8)and 255)*.7152f+(c and 255)*.0722f)/255f

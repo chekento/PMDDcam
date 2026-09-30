@@ -7,7 +7,7 @@
 **Fotografiere einen tieferen Raum. · Photograph a deeper space.**
 
 [![Android Build](https://github.com/chekento/PMDDcam/actions/workflows/android.yml/badge.svg)](https://github.com/chekento/PMDDcam/actions/workflows/android.yml)
-![Version](https://img.shields.io/badge/preview-v0.3.1-19d3ae)
+![Version](https://img.shields.io/badge/preview-v0.4.0-19d3ae)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)
 ![Processing](https://img.shields.io/badge/photo_processing-on--device-19d3ae)
 ![Cloud](https://img.shields.io/badge/photo_uploads-none-25343c)
@@ -33,18 +33,18 @@
 
 ## 📲 Android Preview herunterladen
 
-<a href="https://github.com/chekento/PMDDcam/releases/download/v0.3.1/PMDDcam-0.3.1.apk">
+<a href="https://github.com/chekento/PMDDcam/releases/download/v0.4.0/PMDDcam-0.4.0.apk">
   <img src="docs/assets/pmddcam-apk-download.webp" alt="Download PMDDcam APK for Android" width="100%">
 </a>
 
 <div align="center">
 
-### [⬇ PMDDcam 0.3.1 · APK direkt herunterladen](https://github.com/chekento/PMDDcam/releases/download/v0.3.1/PMDDcam-0.3.1.apk)
+### [⬇ PMDDcam 0.4.0 · APK direkt herunterladen](https://github.com/chekento/PMDDcam/releases/download/v0.4.0/PMDDcam-0.4.0.apk)
 
 Android 8.0+ · ARM64 / ARMv7 / x86_64 · Preview · ca. 229 MB  
-**SHA-256:** [SHA256SUMS.txt](https://github.com/chekento/PMDDcam/releases/download/v0.3.1/SHA256SUMS.txt)
+**SHA-256:** [SHA256SUMS.txt](https://github.com/chekento/PMDDcam/releases/download/v0.4.0/SHA256SUMS.txt)
 
-[Release & Prüfsumme](https://github.com/chekento/PMDDcam/releases/tag/v0.3.1) ·
+[Release & Prüfsumme](https://github.com/chekento/PMDDcam/releases/tag/v0.4.0) ·
 [Builds](https://github.com/chekento/PMDDcam/actions) ·
 [Changelog](CHANGELOG.md)
 
@@ -111,7 +111,7 @@ PMDDcam arbeitet **nicht-destruktiv**: Das Original wird zuerst im privaten Proj
 
 ## Was PMDDcam macht
 
-PMDDcam verbindet eine native Android-Kamera mit **PMDD 4.0 — Perceptual Motion & Depth Design**, lokaler Tiefenschätzung, Objekterkennung, 61 Stilrezepten und einer interaktiven 2.5D-Betrachtung. Fotoanalyse und Rendering laufen auf dem Gerät; die App benötigt für die Fotoverarbeitung **keinen Cloud-Upload und keinen API-Schlüssel**.
+PMDDcam verbindet eine native Android-Kamera mit **PMDD 4.0 — Perceptual Motion & Depth Design**, lokaler Tiefenschätzung, Objekterkennung, 80 Stilrezepten und einer interaktiven 2.5D-Betrachtung. Fotoanalyse und Rendering laufen auf dem Gerät; die App benötigt für die Fotoverarbeitung **keinen Cloud-Upload und keinen API-Schlüssel**.
 
 | Bereich | Enthalten |
 |---|---|
@@ -120,25 +120,20 @@ PMDDcam verbindet eine native Android-Kamera mit **PMDD 4.0 — Perceptual Motio
 | 🧠 Lokale Analyse | MiDaS v2.1 Small, SSD-MobileNet und ML-Kit-Hilfen direkt auf dem Gerät |
 | 🧊 Tiefe | 8–128 Viewer-Abtastebenen, Standard 96; Tiefenstärke bis 250 %, Trennung, Fokus, Relief, Atmosphäre, Bokeh |
 | 🎯 Objektlogik | Anker / dynamisch / Atmosphäre; Bewegungsrichtung, Intensität, Tempo und Tiefenposition je Bereich |
-| 🪄 Stile | 61 lokale Rezepte aus Foto, Illustration, Atelier, Retro, Zukunft und Atmosphäre |
+| 🪄 Stile | 80 lokale Rezepte aus Foto, Illustration, Atelier, Retro, Zukunft und Atmosphäre |
 | 👁 Betrachtermodus | Touch, Pinch, Geräteneigung oder optionale Kopfsteuerung; links/rechts, oben/unten, näher/weiter |
 | 🧰 Bearbeitung | Kompakte Menüs für Looks / PMDD / Werkzeuge, Undo/Redo, Tiefenpinsel, manuelle Bereiche |
 | 💾 Export | PNG, JPEG, Original, Tiefenkarte und vollständig bearbeitbares ZIP-Projekt |
 | 🔒 Privatsphäre | Lokale Verarbeitung, keine Foto-Uploads, kein Cloudkonto, keine App-Internetberechtigung |
 
-### Neu in 0.3.1
+### Neu in 0.4.0
 
-Kleine Objekte werden zusätzlich in bis zu sechs Detailausschnitten gesucht; doppelte Treffer werden zusammengeführt.
-
-- **PMDD Vivid** als kräftiger fotografischer Standard: gezielte Schattenaufhellung, lebendigere Farben, erhaltene Lichter und lokale Zeichnung
-- deutlich weniger milchiger Dunst und begrenzte Kontrastverstärkung an harten Kanten
-- neue Vorgaben: 96 Ebenen, 125 % Tiefe, 70 % Bewegungshinweise, 100 % interaktive Parallaxe
-- bewegliche COCO-Klassen (Menschen, Tiere, Fahrzeuge) erhalten automatische Dynamikrollen; feste Objekte bleiben ruhige Anker
-- lokale asymmetrische Kontrastfolgen für das statische Foto statt periodischer Wellen; Wolken-/Dunstbereiche als maskierte, editierbare Vorschläge
-- Head-Tracking mit Kalibrierung, Kopfneigung und Abstand; zusätzliche objektgebundene Verschiebung in der 2.5D-Ansicht
-- **3D ansehen** direkt neben dem dauerhaft sichtbaren **Original ↔ PMDD**-Umschalter
-- optionaler System-Auslöseton, standardmäßig aus; eine von Android gemeldete Tonpflicht hat Vorrang
-- 61 lokale Stilrezepte; gespeicherte Projektwerte und eigene Aufnahmevorgaben bleiben erhalten
+- **80 Looks mit erkennbaren Verfahren:** Comic-Konturen und Farbflächen, Aquarellpigment, Ölstruktur, Bleistiftschraffur, Neon-Kantenschein, Druckraster und feste Retro-Paletten.
+- **Lebendige Objekte:** Im interaktiven Betrachter laufen begrenzte Objektbewegungen auch bei stillstehendem Blick. Unter **3D ansehen → Animation · Stärke und Tempo** lassen sie sich getrennt einstellen und ausschalten. Statische Anker bleiben ruhig; PNG/JPEG sind weiterhin unbewegte Fotos.
+- **19 neue Looks**, darunter Linolschnitt, Pointillismus, Kreidepastell, Comic Noir, CGA 4, C64 16, CRT Arcade, Neon Wire und Thermal Vision (Falschfarben, keine Wärmekamera).
+- Beschreibungen auf Look-Karten; volle Stilmischung bei Auswahl, danach frei regelbar.
+- Stärkere statische Bewegungshinweise in zentralen Objektbereichen. Die Illusionswirkung hängt weiterhin von Motiv, Display und Betrachtung ab.
+- Alle bisherigen Verbesserungen: PMDD Vivid, 96 Tiefenebenen, verbesserte kleine Objekte, Originalvergleich, kompakte Menüs und optionaler Systemauslöseton.
 
 Für ein vorhandenes Projekt: **PMDD → Alle Einstellungen → PMDD Vivid · neue Standardabstimmung**. Für die neue automatische Objektzuordnung in alten Projekten: **Werkzeuge → Objekte → Objekte und Tiefe neu analysieren** (ersetzt manuelle Tiefen-/Objektänderungen nach Bestätigung). Nur den Look ändern: **Looks → Foto → PMDD Vivid**. Eigene Aufnahmevorgaben lassen sich im Kameramenü über **Aufnahme-Looks → PMDD-Vorgaben** umstellen.
 
@@ -146,19 +141,19 @@ PMDD Vivid orientiert sich an einem kräftigen, räumlichen Foto-Look. Es ist ke
 
 ---
 
-## Die 61 PMDD-fähigen Stile
+## Die 80 PMDD-fähigen Stile
 
 <details>
 <summary><strong>Alle Stilgruppen anzeigen</strong></summary>
 
 | Gruppe | Stile |
 |---|---|
-| Foto | **PMDD Vivid (Standard)**, PMDD Natural, Cinematic, Soft Portrait, Alpine Clarity, Golden Hour, Blue Hour, Film Noir, Silver Gelatin, Matte Editorial, Chrome Color |
-| Illustration | Comic Classic, Manga Ink, Anime Cel, Graphic Novel, Pop Art, Ligne Claire, Pastel Cel, Superhero, Storybook, Riso Comic |
-| Atelier | Wasserfarben, Aquarell Warm, Gouache, Ölgemälde, Impression, Tusche, Bleistift, Buntstift, Kohle, Kupferstich |
-| Retro | Retro 70s, Retro 80s, Instant Film, Sepia, Cyanotypie, VHS Print, 8-Bit Arcade, 16-Bit Adventure, Pocket Green, Newspaper |
-| Zukunft | Futuretech, Cyberpunk, Neon Tokyo, Holographic, Synthwave, Blueprint, Infrared Dream, Matrix Green, Deep Space, Liquid Metal |
-| Atmosphäre | Dream Pastel, Nordic Mist, Desert Sand, Emerald Forest, Sakura Bloom, Underwater, Lava Light, Arctic Ice, Moonlight, Velvet Dusk |
+| Foto | **PMDD Vivid (Standard)**, PMDD Natural, Cinematic, Soft Portrait, Alpine Clarity, Golden Hour, Blue Hour, Film Noir, Silver Gelatin, Matte Editorial, Chrome Color, Slide Film, Bleach Bypass, Dramatic B&W, Soft Bloom |
+| Illustration | Comic Classic, Manga Ink, Anime Cel, Graphic Novel, Pop Art, Ligne Claire, Pastel Cel, Superhero, Storybook, Riso Comic, Comic Noir, Flat Cel, Poster Pop |
+| Atelier | Wasserfarben, Aquarell Warm, Gouache, Ölgemälde, Impression, Tusche, Bleistift, Buntstift, Kohle, Kupferstich, Linolschnitt, Sumi-e, Kreidepastell, Dry Brush, Pointillismus |
+| Retro | Retro 70s, Retro 80s, Instant Film, Sepia, Cyanotypie, VHS Print, 8-Bit Arcade, 16-Bit Adventure, Pocket Green, Newspaper, CGA 4, C64 16, CRT Arcade |
+| Zukunft | Futuretech, Cyberpunk, Neon Tokyo, Holographic, Synthwave, Blueprint, Infrared Dream, Matrix Green, Deep Space, Liquid Metal, Thermal Vision, Neon Wire |
+| Atmosphäre | Dream Pastel, Nordic Mist, Desert Sand, Emerald Forest, Sakura Bloom, Underwater, Lava Light, Arctic Ice, Moonlight, Velvet Dusk, Sunset Rose, Dream Bloom |
 
 Die Stile verändern Pixel mit lokalen Bildverfahren, unter anderem Kantenzeichnung, Quantisierung, Pigment-/Papiertextur, Raster, Neon und Duoton. Sie erzeugen keine neuen semantischen Objekte wie ein generatives Bildmodell. Anschließend durchlaufen sie dieselbe PMDD-Verarbeitung.
 

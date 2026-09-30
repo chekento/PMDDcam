@@ -367,7 +367,7 @@ class MainActivity:ComponentActivity(),SensorEventListener {
             0->{slider(body,"Tiefenebenen",r.layers.toFloat(),8f,128f){r.layers=it.roundToInt()};slider(body,"3D-Tiefe",r.depth,0f,2.5f){r.depth=it};slider(body,"Ebenentrennung",r.separation){r.separation=it};slider(body,"Fokusebene · fern → nah",r.focus){r.focus=it};slider(body,"Plastisches Licht",r.relief){r.relief=it};slider(body,"Atmosphärische Ferne",r.haze){r.haze=it};slider(body,"Tiefenunschärfe",r.bokeh){r.bokeh=it};slider(body,"Schattenzeichnung",r.occlusion){r.occlusion=it};check(body,"Tiefenrichtung umkehren",r.invertDepth){r.invertDepth=it}}
             1->{body.addView(label("Statische Mikro-Kontraste erzeugen Wahrnehmungshinweise. Die Stärke der Illusion hängt auch vom Motiv, Display und Blick ab.",13f,muted));check(body,"Bewegungsillusion aktiv",r.motion){r.motion=it};slider(body,"Illusionsstärke",r.motionAmount,0f,2f){r.motionAmount=it};slider(body,"Texturfrequenz",r.motionScale){r.motionScale=it};slider(body,"Peripherie betonen",r.peripheral){r.peripheral=it};slider(body,"Bewegung an Tiefe koppeln",r.depthCoupling){r.depthCoupling=it};check(body,"Stabile Anker schützen",r.lockAnchors){r.lockAnchors=it};check(body,"Erkannte Gesichter schützen",r.protectFaces){r.protectFaces=it}}
             2->{slider(body,"Stilmischung",r.styleMix){r.styleMix=it};slider(body,"Lokale Schärfe",r.sharpness){r.sharpness=it};slider(body,"Mikrotextur",r.texture){r.texture=it};slider(body,"Belichtung",r.exposure,-1f,1f){r.exposure=it};slider(body,"Kontrast",r.contrast,-.5f,.8f){r.contrast=it};slider(body,"Sättigung",r.saturation,0f,2f){r.saturation=it};slider(body,"Vignette",r.vignette){r.vignette=it}}
-            3->{check(body,"Links / rechts",r.horizontal){r.horizontal=it};check(body,"Oben / unten",r.vertical){r.vertical=it};check(body,"Näher / weiter",r.distance){r.distance=it};slider(body,"Interaktive Parallaxe",r.parallax,0f,2f){r.parallax=it};slider(body,"Betrachtungsabstand · cm",r.viewDistance,20f,150f){r.viewDistance=it};slider(body,"Bildbreite · cm",r.screenSize,8f,100f){r.screenSize=it};body.addView(label("Für die reale Bewegungserkennung den Betrachtermodus mit Kopfsteuerung einschalten. Ein PNG bleibt statisch.",13f,muted))}
+            3->{check(body,"Objekte automatisch animieren",r.animateObjects){r.animateObjects=it};slider(body,"Animationsstärke",r.animationAmount,0f,2f){r.animationAmount=it};slider(body,"Animationstempo",r.animationSpeed,.1f,2f){r.animationSpeed=it};check(body,"Links / rechts",r.horizontal){r.horizontal=it};check(body,"Oben / unten",r.vertical){r.vertical=it};check(body,"Näher / weiter",r.distance){r.distance=it};slider(body,"Interaktive Parallaxe",r.parallax,0f,2f){r.parallax=it};slider(body,"Betrachtungsabstand · cm",r.viewDistance,20f,150f){r.viewDistance=it};slider(body,"Bildbreite · cm",r.screenSize,8f,100f){r.screenSize=it};body.addView(label("Animation läuft nur in „3D ansehen“. Bewegliche Bereiche werden belebt, feste Anker bleiben ruhig. Kopfsteuerung und Geräte-Neigung lassen sich dazu kombinieren. PNG/JPEG bleiben statisch.",13f,muted))}
             4->{check(body,"Objekte und Gesichter automatisch erkennen",r.detectObjects){r.detectObjects=it};body.addView(label("Wirkt bei neuen Aufnahmen bzw. „Neu analysieren“. Vorhandene Objektrollen bleiben beim Bearbeiten erhalten.",12f,muted));slider(body,"Export · längste Kante",r.outputSize.toFloat(),1024f,4096f){r.outputSize=it.roundToInt()};body.addView(label("Originale behalten ihre volle Auflösung. Die Ausgabe wird zum Schutz vor Speicherabbruch an den Gerätespeicher angepasst.",13f,muted))}
         }
         val dialog=AlertDialog.Builder(this).setTitle(arrayOf("Tiefe & Ebenen","Bewegungsillusion","Bildgestaltung","Betrachtung","Erkennung & Ausgabe")[group]).setView(scroll(body)).setPositiveButton("Übernehmen"){_,_->applyRecipe(r,defaultsOnly)}.setNegativeButton("Abbrechen",null).create();showDialog(dialog)
@@ -390,14 +390,15 @@ class MainActivity:ComponentActivity(),SensorEventListener {
             for(style in options){
                 val card=column().apply{setPadding(dp(6),dp(6),dp(6),dp(6));background=shape(surfaceColor,14f)}
                 val iv=ImageView(this).apply{scaleType=ImageView.ScaleType.CENTER_CROP;contentDescription=style.name};images+=iv;card.addView(iv,LinearLayout.LayoutParams(-1,dp(110)))
-                card.addView(label(style.name,13f,if(style.id==p.recipe.style)accent else Color.WHITE,true).apply{setPadding(dp(4),dp(8),dp(4),dp(6))})
+                card.addView(label(style.name,13f,if(style.id==p.recipe.style)accent else Color.WHITE,true).apply{setPadding(dp(4),dp(8),dp(4),dp(4))})
+                card.addView(label(style.description,11f,muted).apply{setPadding(dp(4),0,dp(4),dp(8));minLines=2})
                 gridView.addView(card,GridLayout.LayoutParams().apply{width=0;height=-2;columnSpec=GridLayout.spec(GridLayout.UNDEFINED,1f);setMargins(dp(3),dp(3),dp(3),dp(3))})
-                card.setOnClickListener{snapshot();p.recipe.style=style.id;dialog.dismiss();changed()}
+                card.setOnClickListener{snapshot();p.recipe.style=style.id;p.recipe.styleMix=1f;dialog.dismiss();changed()}
             }
             previews=lifecycleScope.launch {
                 val small=Bitmap.createScaledBitmap(src,160,(160f*src.height/src.width).roundToInt().coerceAtLeast(1),true)
                 try{for((i,style) in options.withIndex()){
-                    val recipe=p.snapshot().apply{this.recipe.style=style.id}
+                    val recipe=p.snapshot().apply{this.recipe.style=style.id;this.recipe.styleMix=1f}
                     val thumb=withContext(Dispatchers.Default){PmddRenderer.render(small,d,recipe)}
                     ensureActive();images[i].setImageBitmap(thumb.image)
                 }}finally{if(small!==src)small.recycle()}
@@ -452,14 +453,15 @@ class MainActivity:ComponentActivity(),SensorEventListener {
 
     private fun viewerDialog(){
         originalShown=false;showCurrentImage()
-        AlertDialog.Builder(this).setTitle("Betrachtermodus").setItems(arrayOf("Mit Finger steuern · ziehen / aufziehen","Kopfbewegung · Frontkamera","Gerät neigen · Sensor","Zentrieren / neu kalibrieren","Statisches PMDD-Bild")){_,which->
+        AlertDialog.Builder(this).setTitle("Betrachtermodus").setItems(arrayOf("Mit Finger steuern · ziehen / aufziehen","Kopfbewegung · Frontkamera","Gerät neigen · Sensor","Zentrieren / neu kalibrieren","Statisches PMDD-Bild","Animation · Stärke und Tempo")){_,which->
             when(which){
-                0->{stopTracking();viewer?.active=true;viewer?.requestRender();setStatus("Ziehen: links/rechts & oben/unten · Aufziehen: näher/weiter")}
+                0->{stopTracking();viewer?.active=true;viewer?.requestRender();setStatus("Lebendige Objekte · ziehen / aufziehen für Perspektive")}
                 1->requireCamera{stopTracking();viewer?.active=true;tracking=HeadTracker(this,this,{x,y,z->viewer?.setPosition(x,y,z)},{setStatus(it)}).also{it.start()}}
                 2->{stopTracking();val manager=getSystemService(SENSOR_SERVICE)as SensorManager;val sensor=manager.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR)?:manager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
                     if(sensor==null)message("Kein geeigneter Sensor vorhanden. Bitte Finger- oder Kopfsteuerung wählen.")else{sensorMode=true;sensorOrigin=null;viewer?.active=true;manager.registerListener(this,sensor,SensorManager.SENSOR_DELAY_GAME);setStatus("Neigungssteuerung · näher/weiter per Aufziehen")}}
                 3->{viewer?.center();tracking?.calibrate();sensorOrigin=null}
                 4->{stopTracking();viewer?.active=false;viewer?.center();setStatus("Statisches PMDD-Foto · für PNG/JPEG-Export")}
+                5->project?.let{settingsSection(it.recipe.copy(),3,false)}
             }
         }.setNegativeButton("Schließen",null).show()
     }
@@ -517,7 +519,7 @@ class MainActivity:ComponentActivity(),SensorEventListener {
         }
     }
     private fun about(){
-        AlertDialog.Builder(this).setTitle("PMDDcam · 0.3.0").setMessage("Fotografiere einen tieferen Raum.\n\nPMDD 4.0 — Perceptual Motion & Depth Design\nKonzept: Kolja Werner Schumann · kosch.cloud\nHuman-AI-Co-Design mit ChatGPT.\n\nDie Fotoverarbeitung und Erkennung laufen auf deinem Gerät. Originale werden getrennt von Effekten gespeichert. Zum Sichern außerhalb der App ein PMDD-Projekt exportieren.\n\nStatische PMDD-Illusionen und interaktive 2.5D-Parallaxe sind getrennte Modi. Tiefen werden aus einem Foto geschätzt; verdeckte Rückseiten kann das Foto nicht zeigen. Die ${Styles.all.size} Stile sind lokale Bildverfahren. PMDD Vivid ist der kräftige Standardlook; er erzeugt keine neuen Motive.\n\nMiDaS v2.1 und SSD-MobileNet (MIT), ONNX Runtime (MIT), AndroidX (Apache 2.0), Google ML Kit.\n\n${assets.open("THIRD_PARTY.txt").bufferedReader().use{it.readText()}}")
+        AlertDialog.Builder(this).setTitle("PMDDcam · ${packageManager.getPackageInfo(packageName,0).versionName}").setMessage("Fotografiere einen tieferen Raum.\n\nPMDD 4.0 — Perceptual Motion & Depth Design\nKonzept: Kolja Werner Schumann · kosch.cloud\nHuman-AI-Co-Design mit ChatGPT.\n\nDie Fotoverarbeitung und Erkennung laufen auf deinem Gerät. Originale werden getrennt von Effekten gespeichert. Zum Sichern außerhalb der App ein PMDD-Projekt exportieren.\n\nStatische PMDD-Illusionen und interaktive 2.5D-Parallaxe sind getrennte Modi. Tiefen werden aus einem Foto geschätzt; verdeckte Rückseiten kann das Foto nicht zeigen. Die ${Styles.all.size} Stile sind lokale Bildverfahren. PMDD Vivid ist der kräftige Standardlook; er erzeugt keine neuen Motive.\n\nMiDaS v2.1 und SSD-MobileNet (MIT), ONNX Runtime (MIT), AndroidX (Apache 2.0), Google ML Kit.\n\n${assets.open("THIRD_PARTY.txt").bufferedReader().use{it.readText()}}")
             .setPositiveButton("Schließen",null).setNeutralButton("PMDD-Geschichte"){_,_->startActivity(Intent(Intent.ACTION_VIEW,Uri.parse("https://kosch.cloud/blog/pmdd---die-magie-hinter-der-illusion--wie-wahrnehmung-und-ki-zu-lebendigen-bildern-verschmelzen")))}.setNegativeButton("GitHub"){_,_->startActivity(Intent(Intent.ACTION_VIEW,Uri.parse("https://github.com/chekento/PMDDcam")))}.show()
     }
 

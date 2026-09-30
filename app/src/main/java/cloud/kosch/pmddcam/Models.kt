@@ -31,6 +31,9 @@ data class Recipe(
     var lockAnchors: Boolean = true,
     var detectObjects: Boolean = true,
     var parallax: Float = 1f,
+    var animateObjects: Boolean = true,
+    var animationAmount: Float = .85f,
+    var animationSpeed: Float = .65f,
     var horizontal: Boolean = true,
     var vertical: Boolean = true,
     var distance: Boolean = true,
@@ -49,6 +52,7 @@ data class Recipe(
         styleMix=styleMix.safe(1f),motionAmount=motionAmount.safe(.7f,0f,2f),
         motionScale=motionScale.safe(.6f),peripheral=peripheral.safe(.7f),
         depthCoupling=depthCoupling.safe(.8f),parallax=parallax.safe(1f,0f,2f),
+        animationAmount=animationAmount.safe(.85f,0f,2f),animationSpeed=animationSpeed.safe(.65f,.1f,2f),
         viewDistance=viewDistance.safe(45f,20f,150f),screenSize=screenSize.safe(16f,8f,100f),
         outputSize=outputSize.coerceIn(1024,4096)
     )

@@ -31,15 +31,15 @@ class CoreTest {
         assertTrue(d.values.all{it.isFinite()&&it in 0f..1f})
         val map=DepthMap(2,2,floatArrayOf(0f,1f,0f,1f));assertEquals(.5f,map.sample(.5f,.3f),.0001f)
     }
-    @Test fun `all sixty one styles render distinct deterministic images without editing original`()=runBlocking {
-        assertEquals(61,Styles.all.size);assertEquals(61,Styles.all.map{it.id}.toSet().size)
+    @Test fun `all eighty styles render distinct deterministic images without editing original`()=runBlocking {
+        assertEquals(80,Styles.all.size);assertEquals(80,Styles.all.map{it.id}.toSet().size)
         val image=fixture();val before=pixels(image);val depth=DepthMap(8,8,FloatArray(64){it/63f})
         val fingerprints=mutableSetOf<Int>()
         for(s in Styles.all){
             val p=Project("test",0,Recipe(style=s.id,styleMix=1f),mutableListOf(SceneObject(999,"Atmosphäre",0f,0f,1f,1f,Role.ATMOSPHERE)))
             val result=PmddRenderer.render(image,depth,p);fingerprints+=pixels(result.image).contentHashCode();assertArrayEquals(before,pixels(image));result.image.recycle()
         }
-        assertEquals("Every style must produce a distinct recipe output",61,fingerprints.size)
+        assertEquals("Every style must produce a distinct recipe output",80,fingerprints.size)
         val p=Project("test",0,Recipe(),mutableListOf())
         val a=PmddRenderer.render(image,depth,p);val b=PmddRenderer.render(image,depth,p)
         assertArrayEquals(pixels(a.image),pixels(b.image))
