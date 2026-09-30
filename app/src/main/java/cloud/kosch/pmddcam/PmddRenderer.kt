@@ -53,6 +53,7 @@ object PmddRenderer {
         val output=IntArray(pixels.size)
         val depth=effectiveDepth(raw,project)
         val guide=GuidedDepth(source,depth)
+        val scene=if(style.id=="vivid" && r.styleMix>0f)SceneTone.create(source) else null
         val objects=project.objects.filter{it.enabled}
         val context=currentCoroutineContext()
         val invW=1f/width;val invH=1f/height
@@ -150,6 +151,28 @@ object PmddRenderer {
                         }
                     }
                 }
+                if(scene!=null){
+                    // Bright, dimensional photographic grade inspired by the reference aesthetic.
+                    // Lift photographed shadows while preserving a black point and highlight detail.
+                    val base=scene.base(u,v,gray)
+                    val sky=MotionMath.smooth(.025f,.22f,blue-max(red,green))
+                    val foliage=MotionMath.smooth(.005f,.12f,green-max(red,blue))
+                    val normalized=((gray-scene.black)/(scene.white-scene.black)).coerceIn(0f,1f)
+                    val shadowLift=.12f*(1-MotionMath.smooth(.18f,.55f,base))*MotionMath.smooth(0f,.08f,normalized)
+                    val highlightRoll=.06f*MotionMath.smooth(.55f,.95f,normalized)
+                    var target=normalized+shadowLift-highlightRoll
+                    target+=.16f*(target-.5f)*4f*target*(1-target)
+                    val clarity=(gray-base).coerceIn(-.10f,.10f)*.45f
+                    target=(target+clarity-sky*.075f).coerceIn(0f,1f)
+                    val scale=if(gray>.001f)target/gray else 1f
+                    sr=red*scale;sg=green*scale;sb=blue*scale
+                    // Colour follows the photographed scene: no replacement sky or decorative leaves.
+                    sr-=sky*.018f;sg-=sky*.026f
+                    sr+=foliage*.01f;sb-=foliage*.022f
+                    val saturation=(max(red,max(green,blue))-min(red,min(green,blue)))/max(.05f,max(red,max(green,blue)))
+                    val vibrance=1f+.22f*(1-saturation)
+                    sr=target+(sr-target)*vibrance;sg=target+(sg-target)*vibrance;sb=target+(sb-target)*vibrance
+                }
                 if(style.id=="vhs"){
                     sr=channel(pixels[y*width+max(0,x-detailStep)],16)
                     sb=channel(pixels[y*width+min(width-1,x+detailStep)],0)
@@ -183,11 +206,14 @@ object PmddRenderer {
                 val stability=max(faceWeight,if(r.lockAnchors)anchor else 0f)
                 val far=(1-d).pow(1.5f)
                 val detailGain=r.sharpness*(.35f+d*.85f)+r.relief*gain*(.16f+d*.52f)+r.separation*gain*(d-.25f)*.35f
-                val local=(detail*detailGain).coerceIn(-.18f,.18f)*(1-faceWeight*.8f)
+                // Suppress large step edges rather than outlining every branch with a bright/dark rim.
+                val edgeGuard=1-MotionMath.smooth(.055f,.22f,abs(detail))*.9f
+                val local=(detail*detailGain*edgeGuard).coerceIn(-.09f,.09f)*(1-faceWeight*.8f)
                 // Only deepen shadow detail already in the photograph. No depth-normal emboss.
-                val contact=(min(0f,detail)*r.occlusion*gain*.12f*(.35f+.65f*d)).coerceAtLeast(-.065f)*(1-faceWeight)
-                val contrast=(1+r.contrast+r.separation*gain*(d-.5f)*.16f).coerceIn(.6f,1.9f)
-                val haze=(r.haze*far*(.2f+.12f*r.separation)*gain).coerceAtMost(.65f)
+                val contact=(min(0f,detail)*r.occlusion*gain*.08f*(.35f+.65f*d)*edgeGuard).coerceAtLeast(-.035f)*(1-faceWeight)
+                val contrast=(r.contrast+r.separation*gain*(d-.5f)*.13f).coerceIn(-.5f,.7f)
+                // Depth strength no longer turns atmosphere into an opaque milky veil.
+                val haze=(r.haze*far*(.045f+.02f*r.separation)*min(gain,2.2f)).coerceAtMost(.16f)*(if(scene!=null)1-r.styleMix*.7f else 1f)
                 val focalBlur=(MotionMath.smooth(0f,.7f,r.focus-d)*r.bokeh*(.18f+.16f*gain)*(1-edge*2).coerceIn(.2f,1f)).coerceAtMost(.8f)
                 sr=sr*(1-focalBlur)+br*focalBlur;sg=sg*(1-focalBlur)+bg*focalBlur;sb=sb*(1-focalBlur)+bb*focalBlur
                 val radial=sqrt((u-.5f).pow(2)+(v-.5f).pow(2))*1.414f
@@ -197,10 +223,19 @@ object PmddRenderer {
                     ((1-r.depthCoupling)+r.depthCoupling*(.3f+d*.7f))*geometry).coerceIn(-.16f,.16f)
                 val micro=detail*noise*r.texture*.12f*d*(1-faceWeight)
                 val tone=local+contact+illusion+micro+r.exposure*.3f-r.vignette*radial.pow(2)*.22f
-                sr=(sr-.5f)*contrast+.5f+tone;sg=(sg-.5f)*contrast+.5f+tone;sb=(sb-.5f)*contrast+.5f+tone
+                sr=depthTone(sr,contrast,tone);sg=depthTone(sg,contrast,tone);sb=depthTone(sb,contrast,tone)
                 sr=sr*(1-haze)+.8f*haze;sg=sg*(1-haze)+.87f*haze;sb=sb*(1-haze)+.94f*haze
                 val lum=sr*.2126f+sg*.7152f+sb*.0722f
-                output[index]=rgb(lum+(sr-lum)*r.saturation,lum+(sg-lum)*r.saturation,lum+(sb-lum)*r.saturation)
+                sr=lum+(sr-lum)*r.saturation;sg=lum+(sg-lum)*r.saturation;sb=lum+(sb-lum)*r.saturation
+                if(scene!=null){
+                    // Compress chroma into the available headroom instead of clipping bright petals/skin.
+                    val l=(sr*.2126f+sg*.7152f+sb*.0722f).coerceIn(0f,1f)
+                    val high=max(sr,max(sg,sb));val low=min(sr,min(sg,sb));var chroma=1f
+                    if(high>1f)chroma=min(chroma,(1-l)/(high-l).coerceAtLeast(.0001f))
+                    if(low<0f)chroma=min(chroma,l/(l-low).coerceAtLeast(.0001f))
+                    sr=l+(sr-l)*chroma;sg=l+(sg-l)*chroma;sb=l+(sb-l)*chroma
+                }
+                output[index]=rgb(sr,sg,sb)
             }
         }
         return RenderResult(Bitmap.createBitmap(output,width,height,Bitmap.Config.ARGB_8888),depth)
@@ -254,6 +289,12 @@ object PmddRenderer {
             }
         }
         return result
+    }
+    private fun depthTone(value:Float,contrast:Float,tone:Float):Float {
+        val t=value.coerceIn(0f,1f)
+        val curved=t+contrast*(t-.5f)*4f*t*(1-t)
+        val headroom=if(tone>0f)min(1f,(1-curved)*3f) else min(1f,curved*3f)
+        return curved+tone*headroom
     }
     private fun channel(c:Int,shift:Int)=((c shr shift)and 255)/255f
     private fun luma(c:Int)=( ((c shr 16)and 255)*.2126f+((c shr 8)and 255)*.7152f+(c and 255)*.0722f)/255f

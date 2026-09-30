@@ -59,7 +59,7 @@ class DeviceTest {
                 assertTrue("Missing rendered photo evidence",device.executeShellCommand("ls -s /sdcard/Download/pmddcam-tests/qa-$name.png").trim().substringBefore(' ').toLongOrNull()?.let{it>0}==true)
             }
         }
-        evidence("original",photo);evidence("natural",rendered.image)
+        evidence("original",photo);evidence("vivid",rendered.image)
         rendered.image.recycle()
         for(style in listOf("natural","comic","watercolor","cinema","futuretech","gameboy")){
             val sample=p.snapshot().apply{recipe.style=style;recipe.styleMix=1f;if(style=="natural"){recipe.depth=2.5f;recipe.motionAmount=2f}}
@@ -100,6 +100,19 @@ class DeviceTest {
                 previewAspect=preview.width.toFloat()/preview.height
                 assertTrue("The camera uses the full screen height",preview.height>=activity.window.decorView.height*.94f)
             }
+            assertFalse("Shutter sound defaults off",context.getSharedPreferences("pmdd",0).getBoolean("shutterSound",false))
+            icon("Kamera-Einstellungen")
+            val sound=awaitUi(device,By.textStartsWith("Auslöseton:"),20_000,"shutter sound setting")
+            if(!sound.text.contains("Gerät")){
+                assertEquals("Auslöseton: Aus",sound.text);shot("camera-settings.png");sound.click();device.waitForIdle()
+                assertTrue("Sound toggle persists",context.getSharedPreferences("pmdd",0).getBoolean("shutterSound",false))
+                scenario.recreate()
+                val restarted=CountDownLatch(1)
+                scenario.onActivity{activity->cameraView(activity.window.decorView)!!.previewStreamState.observe(activity){if(it==PreviewView.StreamState.STREAMING)restarted.countDown()}}
+                assertTrue("Camera resumes after sound preference restore",restarted.await(30,TimeUnit.SECONDS))
+                icon("Kamera-Einstellungen");awaitUi(device,By.text("Auslöseton: An"),20_000,"restored sound setting").click();device.waitForIdle()
+                assertFalse(context.getSharedPreferences("pmdd",0).getBoolean("shutterSound",false))
+            }else device.pressBack()
             val shutter=awaitUi(device,By.desc("Foto aufnehmen"),20_000,"camera shutter");shot("camera.png");shutter.click()
             awaitUi(device,By.text("Original ↔ PMDD"),90_000,"captured photo editor")
             assertTrue("Initial PMDD render finishes",device.wait(Until.gone(By.text("Abbrechen · Original behalten")),30_000));device.waitForIdle();shot("editor.png")
@@ -108,10 +121,10 @@ class DeviceTest {
             val capturedImage=store.decode(captured.id,600)
             assertTrue("Saved framing matches the fullscreen preview",abs(capturedImage.width.toFloat()/capturedImage.height-previewAspect)<.08f);capturedImage.recycle()
             click("Original ↔ PMDD");awaitUi(device,By.text("Original"),20_000,"original is selected");shot("original-toggle.png")
-            click("Original ↔ PMDD");awaitUi(device,By.text("PMDD Natural"),20_000,"PMDD is selected again")
+            click("Original ↔ PMDD");awaitUi(device,By.text("PMDD Vivid"),20_000,"PMDD is selected again")
             icon("Betrachtermodus");click("Mit Finger steuern · ziehen / aufziehen")
             device.swipe(350,500,650,650,20);device.waitForIdle();shot("viewer.png")
-            click("Looks");awaitUi(device,By.text("60 Stile · alle mit PMDD"),20_000,"style previews");shot("styles.png");dialogButton("button2")
+            click("Looks");awaitUi(device,By.text("61 Stile · alle mit PMDD"),20_000,"style previews");shot("styles.png");dialogButton("button2")
             click("Looks");click("Cinematic")
             click("Werkzeuge");awaitUi(device,By.text("Tiefe malen"),20_000,"readable tool popup");shot("tools.png");device.pressBack()
             click("PMDD");awaitUi(device,By.text("Tiefe & Ebenen"),20_000,"readable PMDD popup");shot("pmdd-menu.png");click("Tiefe & Ebenen");awaitUi(device,By.textStartsWith("Tiefenebenen"),20_000,"depth settings");shot("settings.png");dialogButton("button1")

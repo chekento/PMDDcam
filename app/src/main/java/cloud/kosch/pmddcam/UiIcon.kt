@@ -25,6 +25,7 @@ class UiIcon(private val name:String, private val tint:Int=Color.WHITE):Drawable
             "brush"->{line(9f,16f,18f,3f,21f,6f,12f,18f,9f,16f);val path=Path();path.moveTo(10f,17f);path.cubicTo(4f,13f,7f,20f,2f,21f);path.cubicTo(9f,23f,13f,20f,10f,17f);canvas.drawPath(path,paint)}
             "objects"->{line(3f,9f,3f,3f,9f,3f);line(15f,3f,21f,3f,21f,9f);line(21f,15f,21f,21f,15f,21f);line(9f,21f,3f,21f,3f,15f);circle(12f,12f,4f)}
             "flash"->line(14f,2f,5f,14f,11f,14f,10f,22f,20f,9f,13f,9f,14f,2f)
+            "sound"->{line(3f,9f,7f,9f,12f,5f,12f,19f,7f,15f,3f,15f,3f,9f);canvas.drawArc(10f,7f,20f,17f,-55f,110f,false,paint);canvas.drawArc(7f,3f,25f,21f,-50f,100f,false,paint)}
             "timer"->{circle(12f,14f,8f);line(9f,2f,15f,2f);line(12f,6f,12f,2f);line(12f,14f,16f,11f)}
             "grid"->{for(v in listOf(8f,16f)){line(v,3f,v,21f);line(3f,v,21f,v)}}
             "back"->line(15f,4f,7f,12f,15f,20f)

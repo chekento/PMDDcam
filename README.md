@@ -7,7 +7,7 @@
 **Fotografiere einen tieferen Raum. · Photograph a deeper space.**
 
 [![Android Build](https://github.com/chekento/PMDDcam/actions/workflows/android.yml/badge.svg)](https://github.com/chekento/PMDDcam/actions/workflows/android.yml)
-![Version](https://img.shields.io/badge/preview-v0.2.0-19d3ae)
+![Version](https://img.shields.io/badge/preview-v0.3.0-19d3ae)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)
 ![Processing](https://img.shields.io/badge/photo_processing-on--device-19d3ae)
 ![Cloud](https://img.shields.io/badge/photo_uploads-none-25343c)
@@ -33,18 +33,18 @@
 
 ## 📲 Android Preview herunterladen
 
-<a href="https://github.com/chekento/PMDDcam/releases/download/v0.2.0/PMDDcam-0.2.0.apk">
+<a href="https://github.com/chekento/PMDDcam/releases/download/v0.3.0/PMDDcam-0.3.0.apk">
   <img src="docs/assets/pmddcam-apk-download.webp" alt="Download PMDDcam APK for Android" width="100%">
 </a>
 
 <div align="center">
 
-### [⬇ PMDDcam 0.2.0 · APK direkt herunterladen](https://github.com/chekento/PMDDcam/releases/download/v0.2.0/PMDDcam-0.2.0.apk)
+### [⬇ PMDDcam 0.3.0 · APK direkt herunterladen](https://github.com/chekento/PMDDcam/releases/download/v0.3.0/PMDDcam-0.3.0.apk)
 
 Android 8.0+ · ARM64 / ARMv7 / x86_64 · Preview · ca. 229 MB  
-**SHA-256:** `9e933df8261ae262f5d386b9d53ef244cfa4c585ed681ec595ba2e5bd9410927`
+**SHA-256:** [SHA256SUMS.txt](https://github.com/chekento/PMDDcam/releases/download/v0.3.0/SHA256SUMS.txt)
 
-[Release & Prüfsumme](https://github.com/chekento/PMDDcam/releases/tag/v0.2.0) ·
+[Release & Prüfsumme](https://github.com/chekento/PMDDcam/releases/tag/v0.3.0) ·
 [Builds](https://github.com/chekento/PMDDcam/actions) ·
 [Changelog](CHANGELOG.md)
 
@@ -111,41 +111,44 @@ PMDDcam arbeitet **nicht-destruktiv**: Das Original wird zuerst im privaten Proj
 
 ## Was PMDDcam macht
 
-PMDDcam verbindet eine native Android-Kamera mit **PMDD 4.0 — Perceptual Motion & Depth Design**, lokaler Tiefenschätzung, Objekterkennung, 60 Stilrezepten und einer interaktiven 2.5D-Betrachtung. Fotoanalyse und Rendering laufen auf dem Gerät; die App benötigt für die Fotoverarbeitung **keinen Cloud-Upload und keinen API-Schlüssel**.
+PMDDcam verbindet eine native Android-Kamera mit **PMDD 4.0 — Perceptual Motion & Depth Design**, lokaler Tiefenschätzung, Objekterkennung, 61 Stilrezepten und einer interaktiven 2.5D-Betrachtung. Fotoanalyse und Rendering laufen auf dem Gerät; die App benötigt für die Fotoverarbeitung **keinen Cloud-Upload und keinen API-Schlüssel**.
 
 | Bereich | Enthalten |
 |---|---|
-| 📷 Kamera | Bildfüllendes CameraX, Front/Rückkamera, Tap-Fokus, Pinch-Zoom, Blitz, Raster, 3-/10-Sekunden-Timer |
+| 📷 Kamera | Bildfüllendes CameraX, Front/Rückkamera, Tap-Fokus, Pinch-Zoom, Blitz, Raster, 3-/10-Sekunden-Timer; optionaler Auslöseton (Standard aus, Gerätevorgabe hat Vorrang) |
 | ↔️ Sofortvergleich | Permanenter Original ↔ PMDD-Schalter auf dem Hauptschirm |
 | 🧠 Lokale Analyse | MiDaS v2.1 Small, SSD-MobileNet und ML-Kit-Hilfen direkt auf dem Gerät |
-| 🧊 Tiefe | 8–128 Viewer-Abtastebenen, Standard 64; Tiefenstärke bis 250 %, Trennung, Fokus, Relief, Atmosphäre, Bokeh |
+| 🧊 Tiefe | 8–128 Viewer-Abtastebenen, Standard 96; Tiefenstärke bis 250 %, Trennung, Fokus, Relief, Atmosphäre, Bokeh |
 | 🎯 Objektlogik | Anker / dynamisch / Atmosphäre; Bewegungsrichtung, Intensität, Tempo und Tiefenposition je Bereich |
-| 🪄 Stile | 60 lokale Rezepte aus Foto, Illustration, Atelier, Retro, Zukunft und Atmosphäre |
+| 🪄 Stile | 61 lokale Rezepte aus Foto, Illustration, Atelier, Retro, Zukunft und Atmosphäre |
 | 👁 Betrachtermodus | Touch, Pinch, Geräteneigung oder optionale Kopfsteuerung; links/rechts, oben/unten, näher/weiter |
 | 🧰 Bearbeitung | Kompakte Menüs für Looks / PMDD / Werkzeuge, Undo/Redo, Tiefenpinsel, manuelle Bereiche |
 | 💾 Export | PNG, JPEG, Original, Tiefenkarte und vollständig bearbeitbares ZIP-Projekt |
 | 🔒 Privatsphäre | Lokale Verarbeitung, keine Foto-Uploads, kein Cloudkonto, keine App-Internetberechtigung |
 
-### Neu in 0.2.0
+### Neu in 0.3.0
 
-- bildfüllende Kamera statt überlagernder Status-/Menüflächen
-- drei kompakte Hauptmenüs mit lesbaren Pop-ups
-- dauerhaft sichtbarer **Original ↔ PMDD**-Umschalter
-- kontinuierliche Tiefenverarbeitung statt künstlicher Tiefenkanten-Schatten
-- überarbeitete Stilrezepte
-- Tiefenstärke bis 250 %, Motion/Parallaxe bis 200 %
-- reproduzierbare QA-Bilder aus den Android-Tests
+- **PMDD Vivid** als kräftiger fotografischer Standard: gezielte Schattenaufhellung, lebendigere Farben, erhaltene Lichter und lokale Zeichnung
+- deutlich weniger milchiger Dunst und begrenzte Kontrastverstärkung an harten Kanten
+- neue Vorgaben: 96 Ebenen, 125 % Tiefe, 70 % Bewegungshinweise, 100 % interaktive Parallaxe
+- **3D ansehen** direkt neben dem dauerhaft sichtbaren **Original ↔ PMDD**-Umschalter
+- optionaler System-Auslöseton, standardmäßig aus; eine von Android gemeldete Tonpflicht hat Vorrang
+- 61 lokale Stilrezepte; gespeicherte Projektwerte und eigene Aufnahmevorgaben bleiben erhalten
+
+Für ein vorhandenes Projekt: **PMDD → Alle Einstellungen → PMDD Vivid · neue Standardabstimmung**. Nur den Look ändern: **Looks → Foto → PMDD Vivid**. Eigene Aufnahmevorgaben lassen sich im Kameramenü über **Aufnahme-Looks → PMDD-Vorgaben** umstellen.
+
+PMDD Vivid orientiert sich an einem kräftigen, räumlichen Foto-Look. Es ist kein Aufruf von ChatGPT oder eines generativen Bilddienstes: Neue Blätter, Wolken, Lichtquellen oder verdeckte Objekte werden nicht erfunden. Für tatsächlich wechselnde Perspektiven **3D ansehen** verwenden; PNG/JPEG bleiben statische Fotos.
 
 ---
 
-## Die 60 PMDD-fähigen Stile
+## Die 61 PMDD-fähigen Stile
 
 <details>
 <summary><strong>Alle Stilgruppen anzeigen</strong></summary>
 
 | Gruppe | Stile |
 |---|---|
-| Foto | PMDD Natural, Cinematic, Soft Portrait, Alpine Clarity, Golden Hour, Blue Hour, Film Noir, Silver Gelatin, Matte Editorial, Chrome Color |
+| Foto | **PMDD Vivid (Standard)**, PMDD Natural, Cinematic, Soft Portrait, Alpine Clarity, Golden Hour, Blue Hour, Film Noir, Silver Gelatin, Matte Editorial, Chrome Color |
 | Illustration | Comic Classic, Manga Ink, Anime Cel, Graphic Novel, Pop Art, Ligne Claire, Pastel Cel, Superhero, Storybook, Riso Comic |
 | Atelier | Wasserfarben, Aquarell Warm, Gouache, Ölgemälde, Impression, Tusche, Bleistift, Buntstift, Kohle, Kupferstich |
 | Retro | Retro 70s, Retro 80s, Instant Film, Sepia, Cyanotypie, VHS Print, 8-Bit Arcade, 16-Bit Adventure, Pocket Green, Newspaper |
@@ -164,7 +167,7 @@ Die Stile verändern Pixel mit lokalen Bildverfahren, unter anderem Kantenzeichn
 
 **Interaktiver Viewer:** Eine zusätzliche 2.5D-Ansicht reagiert tatsächlich auf Touch, Geräteneigung und optional auf die relative Kopfposition vor der Frontkamera. Die Kopfsteuerung speichert keine Kameraaufnahme. Statische PNG/JPEG-Exporte enthalten diese Interaktion nicht.
 
-Ein Einzelbild liefert keine metrisch vermessene 3D-Geometrie und keine echten verdeckten Rückseiten. MiDaS schätzt **relative** Tiefe. Die 64 Standardebenen beschreiben die Viewer-Abtastung, nicht 64 automatisch freigestellte semantische Objekte.
+Ein Einzelbild liefert keine metrisch vermessene 3D-Geometrie und keine echten verdeckten Rückseiten. MiDaS schätzt **relative** Tiefe. Die 96 Standardebenen beschreiben die Viewer-Abtastung, nicht 96 automatisch freigestellte semantische Objekte.
 
 ---
 
@@ -187,7 +190,7 @@ GitHub-README-Dateien führen aus Sicherheitsgründen kein JavaScript aus. Desha
 1. Foto aufnehmen oder ein vorhandenes Bild importieren.
 2. Original unverändert im privaten Projektspeicher sichern.
 3. Relative Tiefe lokal mit MiDaS schätzen; Objektbereiche mit SSD-MobileNet und ML Kit ergänzen.
-4. PMDD standardmäßig mit 64 Viewer-Ebenen und 85 % Tiefenstärke rendern.
+4. PMDD standardmäßig mit PMDD Vivid, 96 Viewer-Ebenen und 125 % Tiefenstärke rendern.
 5. Stil, Licht, Tiefe, Bewegungsidentitäten und lokale Bereiche nachträglich bearbeiten.
 6. Statisches PNG/JPEG oder vollständiges Projekt mit Original, Tiefenkarte und Rezept exportieren.
 

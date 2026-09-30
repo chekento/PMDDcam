@@ -10,6 +10,8 @@ data class PhotoStyle(val id:String,val name:String,val group:String,val techniq
 object Styles {
     // Each preset changes an actual rendering recipe; PMDD is applied after every style.
     val all=listOf(
+        PhotoStyle("vivid","PMDD Vivid","Foto",Technique.PHOTO,.045f,1.16f,1.02f,
+            shadow=0xff23364a.toInt(),highlight=0xffffefd0.toInt(),toning=.28f),
         PhotoStyle("natural","PMDD Natural","Foto",Technique.PHOTO),
         PhotoStyle("cinema","Cinematic","Foto",Technique.PHOTO,-.08f,.85f,1.18f),
         PhotoStyle("portrait","Soft Portrait","Foto",Technique.PHOTO,.07f,.82f,.9f),

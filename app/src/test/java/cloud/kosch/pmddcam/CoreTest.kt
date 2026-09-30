@@ -19,9 +19,9 @@ import java.util.zip.ZipInputStream
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class CoreTest {
     @Test fun `high defaults and invalid recipe inputs are bounded`() {
-        assertEquals(64,Recipe().layers);assertTrue(Recipe().depth>=.8f)
+        assertEquals(96,Recipe().layers);assertTrue(Recipe().depth>=1.2f);assertEquals("vivid",Recipe().style)
         val r=Recipe.from(JSONObject("{\"layers\":900,\"depth\":-7,\"outputSize\":90000,\"style\":\"missing\"}"))
-        assertEquals(128,r.layers);assertEquals(0f,r.depth,0f);assertEquals(4096,r.outputSize);assertEquals("natural",r.style)
+        assertEquals(128,r.layers);assertEquals(0f,r.depth,0f);assertEquals(4096,r.outputSize);assertEquals("vivid",r.style)
         val roundTrip=Recipe.from(Recipe().copy(layers=96,vertical=false,style="comic",motion=false).json())
         assertEquals(96,roundTrip.layers);assertFalse(roundTrip.vertical);assertFalse(roundTrip.motion);assertEquals("comic",roundTrip.style)
     }
@@ -31,15 +31,15 @@ class CoreTest {
         assertTrue(d.values.all{it.isFinite()&&it in 0f..1f})
         val map=DepthMap(2,2,floatArrayOf(0f,1f,0f,1f));assertEquals(.5f,map.sample(.5f,.3f),.0001f)
     }
-    @Test fun `all sixty styles render distinct deterministic images without editing original`()=runBlocking {
-        assertEquals(60,Styles.all.size);assertEquals(60,Styles.all.map{it.id}.toSet().size)
+    @Test fun `all sixty one styles render distinct deterministic images without editing original`()=runBlocking {
+        assertEquals(61,Styles.all.size);assertEquals(61,Styles.all.map{it.id}.toSet().size)
         val image=fixture();val before=pixels(image);val depth=DepthMap(8,8,FloatArray(64){it/63f})
         val fingerprints=mutableSetOf<Int>()
         for(s in Styles.all){
             val p=Project("test",0,Recipe(style=s.id,styleMix=1f),mutableListOf(SceneObject(999,"Atmosphäre",0f,0f,1f,1f,Role.ATMOSPHERE)))
             val result=PmddRenderer.render(image,depth,p);fingerprints+=pixels(result.image).contentHashCode();assertArrayEquals(before,pixels(image));result.image.recycle()
         }
-        assertEquals("Every style must produce a distinct recipe output",60,fingerprints.size)
+        assertEquals("Every style must produce a distinct recipe output",61,fingerprints.size)
         val p=Project("test",0,Recipe(),mutableListOf())
         val a=PmddRenderer.render(image,depth,p);val b=PmddRenderer.render(image,depth,p)
         assertArrayEquals(pixels(a.image),pixels(b.image))
@@ -104,6 +104,32 @@ class CoreTest {
     @Test fun `project ids cannot leave private project root`() {
         val store=ProjectStore(RuntimeEnvironment.getApplication())
         assertThrows(IllegalArgumentException::class.java){store.dir("../../escape")}
+    }
+    @Test fun `vivid opens shadows preserves highlights and enriches blue without a veil`()=runBlocking {
+        val colors=intArrayOf(0xff000000.toInt(),0xff202020.toInt(),0xff404040.toInt(),0xff777777.toInt(),
+            0xffbbbbbb.toInt(),0xffeeeeee.toInt(),0xffffffff.toInt(),0xff4997e5.toInt())
+        val photo=Bitmap.createBitmap(IntArray(256*64){i->colors[(i%256)/32]},256,64,Bitmap.Config.ARGB_8888)
+        val d=DepthMap(8,2,FloatArray(16){.5f})
+        val r=Recipe(depth=0f,relief=0f,bokeh=0f,sharpness=0f,texture=0f,vignette=0f,contrast=0f,motion=false)
+        val rendered=PmddRenderer.render(photo,d,Project("tone",0,r,mutableListOf())).image
+        val result=pixels(rendered)
+        fun sample(i:Int)=result[32*256+i*32+16]
+        fun lum(c:Int)=((c shr 16)and 255)*.2126+((c shr 8)and 255)*.7152+(c and 255)*.0722
+        fun saturation(c:Int):Double{val rgb=listOf((c shr 16)and 255,(c shr 8)and 255,c and 255);return (rgb.max()-rgb.min()).toDouble()/rgb.max().coerceAtLeast(1)}
+        assertTrue("Shadow detail must become more visible",lum(sample(1))>lum(colors[1])+4)
+        assertTrue("Lifting shadows must retain a black point",lum(sample(0))<8)
+        assertTrue("Bright detail must remain distinguishable from white",lum(sample(6))-lum(sample(5))>3)
+        for(i in 1..6)assertTrue("The neutral ramp must remain ordered",lum(sample(i))>lum(sample(i-1)))
+        assertTrue("Blue must not become a pale gray veil",saturation(sample(7))>saturation(colors[7]))
+        assertTrue("Sky grading must preserve blue hue",(sample(7)and 255)>((sample(7)shr 8)and 255))
+        photo.recycle();rendered.recycle()
+    }
+    @Test fun `new defaults do not migrate saved natural recipes`() {
+        val saved=JSONObject("""{"layers":64,"depth":0.85,"style":"natural","styleMix":0.85,"haze":0.24,"motionAmount":0.32,"parallax":0.7}""")
+        val restored=Recipe.from(saved)
+        assertEquals("natural",restored.style);assertEquals(64,restored.layers)
+        assertEquals(.85f,restored.depth,0f);assertEquals(.24f,restored.haze,0f)
+        assertEquals(.32f,restored.motionAmount,0f);assertEquals(.7f,restored.parallax,0f)
     }
     private fun fixture():Bitmap = Bitmap.createBitmap(IntArray(64*48){i->val x=i%64;val y=i/64;0xff000000.toInt() or ((x*4) shl 16) or ((y*5) shl 8) or ((x*7+y*9)%256)},64,48,Bitmap.Config.ARGB_8888)
     private fun pixels(b:Bitmap)=IntArray(b.width*b.height).also{b.getPixels(it,0,b.width,0,0,b.width,b.height)}

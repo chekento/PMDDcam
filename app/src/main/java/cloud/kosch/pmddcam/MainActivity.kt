@@ -47,6 +47,7 @@ class MainActivity:ComponentActivity(),SensorEventListener {
     private lateinit var busyLabel:TextView
     private lateinit var store:ProjectStore
     private val prefs by lazy{getSharedPreferences("pmdd",MODE_PRIVATE)}
+    private lateinit var shutterSound:ShutterSound
     private var page="camera"
     private var project:Project?=null
     private var source:Bitmap?=null
@@ -93,6 +94,7 @@ class MainActivity:ComponentActivity(),SensorEventListener {
         super.onCreate(savedInstanceState)
         val state=savedInstanceState
         store=ProjectStore(applicationContext)
+        shutterSound=ShutterSound(enabled={prefs.getBoolean("shutterSound",false)})
         exportKind=state?.getString("exportKind")?:"png"
         WindowCompat.setDecorFitsSystemWindows(window,false)
         root=FrameLayout(this).apply{setBackgroundColor(backgroundColor)}
@@ -155,12 +157,13 @@ class MainActivity:ComponentActivity(),SensorEventListener {
         top.addView(brand,LinearLayout.LayoutParams(0,-2,1f))
         top.addView(iconButton("photos","Sammlung öffnen"){showLibrary()})
         top.addView(iconButton("looks","Aufnahme-Looks"){anchor->popupMenu(anchor,"Aufnahme-Look",listOf(
-            MenuItem("looks","60 Stile","Look für neue Fotos wählen"){defaultStyleDialog()},
+            MenuItem("looks","${Styles.all.size} Stile","Look für neue Fotos wählen"){defaultStyleDialog()},
             MenuItem("depth","PMDD-Vorgaben","Tiefe und Bewegung einstellen"){settingsDialog(defaults(),true)}))})
         top.addView(iconButton("settings","Kamera-Einstellungen"){anchor->popupMenu(anchor,"Kamera",listOf(
             MenuItem("flash","Blitz: ${flashName()}","Aus · Auto · An"){flash=(flash+1)%3;capture?.flashMode=flash;setStatus("Blitz: ${flashName()}")},
             MenuItem("timer","Timer: ${timer}s","Aus · 3 Sekunden · 10 Sekunden"){timer=when(timer){0->3;3->10;else->0};setStatus("Timer: ${timer}s")},
             MenuItem("grid","Raster ${if(grid)"an" else "aus"}","Drittellinien ein-/ausblenden"){grid=!grid;guide.invalidate()},
+            MenuItem("sound","Auslöseton: ${shutterSoundName()}",if(shutterSound.requiredByDevice)"Vom Gerät vorgeschrieben" else "Optional · standardmäßig aus"){toggleShutterSound()},
             MenuItem("export","Projekt öffnen","Gesichertes PMDD-Projekt laden"){pickProject.launch(arrayOf("application/zip","application/octet-stream"))},
             MenuItem("info","Über PMDDcam","Hilfe und Informationen"){about()}))})
         overlay.addView(top,FrameLayout.LayoutParams(-1,-2,Gravity.TOP))
@@ -193,6 +196,12 @@ class MainActivity:ComponentActivity(),SensorEventListener {
             }.setNegativeButton("Schließen",null).show()
         }.setNegativeButton("Schließen",null).show()
     }
+    private fun shutterSoundName()=if(shutterSound.requiredByDevice)"An · Gerät" else if(prefs.getBoolean("shutterSound",false))"An" else "Aus"
+    private fun toggleShutterSound(){
+        if(shutterSound.requiredByDevice){message("Android schreibt auf diesem Gerät einen Auslöseton vor. PMDDcam beachtet diese Vorgabe.");return}
+        prefs.edit().putBoolean("shutterSound",!prefs.getBoolean("shutterSound",false)).apply()
+        shutterSound.refresh();setStatus("Auslöseton: ${shutterSoundName()}")
+    }
     private fun flashName()=when(flash){ImageCapture.FLASH_MODE_AUTO->"Auto";ImageCapture.FLASH_MODE_ON->"An";else->"Aus"}
     private fun bindCamera(view:PreviewView){
         if(page!="camera")return
@@ -223,6 +232,7 @@ class MainActivity:ComponentActivity(),SensorEventListener {
             val output=ImageCapture.OutputFileOptions.Builder(store.original(p.id)).build()
             suspendCancellableCoroutine<Unit>{continuation->
                 cap.takePicture(output,ContextCompat.getMainExecutor(this@MainActivity),object:ImageCapture.OnImageSavedCallback{
+                    override fun onCaptureStarted(){shutterSound.onCaptureStarted()}
                     override fun onImageSaved(out:ImageCapture.OutputFileResults){if(continuation.isActive)continuation.resume(Unit)}
                     override fun onError(e:ImageCaptureException){if(continuation.isActive)continuation.resumeWith(Result.failure(e))}
                 })
@@ -260,7 +270,10 @@ class MainActivity:ComponentActivity(),SensorEventListener {
         compareButton=button("Original ↔ PMDD"){originalShown=!originalShown;showCurrentImage()}.apply{contentDescription="Original und PMDD umschalten";textSize=13f;compoundDrawablePadding=dp(8)}
         compareButton?.setCompoundDrawablesRelative(UiIcon("compare",accent).apply{setBounds(0,0,dp(20),dp(20))},null,null,null)
         direct.addView(compareButton,LinearLayout.LayoutParams(0,dp(48),1f).apply{marginEnd=dp(10)})
-        direct.addView(iconButton("eye","Betrachtermodus"){viewerDialog()})
+        direct.addView(button("3D ansehen"){viewerDialog()}.apply{
+            contentDescription="Betrachtermodus";textSize=12f
+            setCompoundDrawablesRelative(UiIcon("depth",accent).apply{setBounds(0,0,dp(18),dp(18))},null,null,null);compoundDrawablePadding=dp(6)
+        },LinearLayout.LayoutParams(dp(128),dp(48)))
         bottom.addView(direct,LinearLayout.LayoutParams(-1,-2).apply{bottomMargin=dp(10)})
         val menus=row()
         menus.addView(menuButton("looks","Looks"){stylesDialog()},LinearLayout.LayoutParams(0,dp(62),1f).apply{marginEnd=dp(6)})
@@ -336,13 +349,14 @@ class MainActivity:ComponentActivity(),SensorEventListener {
     }
 
     private fun settingsDialog(initial:Recipe,defaultsOnly:Boolean=false){
-        val choice=arrayOf("Tiefe & Ebenen","Bewegungsillusion","Bild & Stilintensität","Betrachtung & Parallaxe","Erkennung & Ausgabe","Intensiv-Preset","Natürlich-Preset","Als Standard für neue Fotos")
+        val choice=arrayOf("Tiefe & Ebenen","Bewegungsillusion","Bild & Stilintensität","Betrachtung & Parallaxe","Erkennung & Ausgabe","Intensiv-Preset","Natürlich-Preset","Als Standard für neue Fotos","PMDD Vivid · neue Standardabstimmung")
         AlertDialog.Builder(this).setTitle(if(defaultsOnly)"Aufnahme-Vorgaben" else "PMDD-Einstellungen").setItems(choice){_,which->
             val r=initial.copy()
             when(which){
                 5->{r.layers=96;r.depth=1.85f;r.separation=.9f;r.motionAmount=1.2f;r.parallax=1.25f;r.relief=.7f;applyRecipe(r,defaultsOnly)}
                 6->{r.layers=48;r.depth=.55f;r.separation=.45f;r.motionAmount=.18f;r.haze=.14f;applyRecipe(r,defaultsOnly)}
                 7->{prefs.edit().putString("defaults",r.json().toString()).apply();message("Vorgaben für neue Aufnahmen gespeichert.")}
+                8->applyRecipe(Recipe().copy(outputSize=r.outputSize,detectObjects=r.detectObjects,horizontal=r.horizontal,vertical=r.vertical,distance=r.distance,viewDistance=r.viewDistance,screenSize=r.screenSize,invertDepth=r.invertDepth),defaultsOnly)
                 else->settingsSection(r,which,defaultsOnly)
             }
         }.setNegativeButton("Schließen",null).show()
@@ -367,7 +381,7 @@ class MainActivity:ComponentActivity(),SensorEventListener {
         val layout=column().apply{setPadding(dp(14),0,dp(14),0)}
         val tabs=Spinner(this);val groups=Styles.all.map{it.group}.distinct();tabs.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,groups);layout.addView(tabs)
         val gridView=GridLayout(this).apply{columnCount=2};layout.addView(scroll(gridView),LinearLayout.LayoutParams(-1,0,1f))
-        val dialog=AlertDialog.Builder(this).setTitle("60 Stile · alle mit PMDD").setView(layout).setNegativeButton("Schließen",null).create()
+        val dialog=AlertDialog.Builder(this).setTitle("${Styles.all.size} Stile · alle mit PMDD").setView(layout).setNegativeButton("Schließen",null).create()
         var previews:Job?=null
         fun populate(category:String){
             previews?.cancel();gridView.removeAllViews()
@@ -503,7 +517,7 @@ class MainActivity:ComponentActivity(),SensorEventListener {
         }
     }
     private fun about(){
-        AlertDialog.Builder(this).setTitle("PMDDcam · 0.2.0").setMessage("Fotografiere einen tieferen Raum.\n\nPMDD 4.0 — Perceptual Motion & Depth Design\nKonzept: Kolja Werner Schumann · kosch.cloud\nHuman-AI-Co-Design mit ChatGPT.\n\nDie Fotoverarbeitung und Erkennung laufen auf deinem Gerät. Originale werden getrennt von Effekten gespeichert. Zum Sichern außerhalb der App ein PMDD-Projekt exportieren.\n\nStatische PMDD-Illusionen und interaktive 2.5D-Parallaxe sind getrennte Modi. Tiefen werden aus einem Foto geschätzt; verdeckte Rückseiten kann das Foto nicht zeigen. Die 60 Stile sind lokale Bildverfahren.\n\nMiDaS v2.1 und SSD-MobileNet (MIT), ONNX Runtime (MIT), AndroidX (Apache 2.0), Google ML Kit.\n\n${assets.open("THIRD_PARTY.txt").bufferedReader().use{it.readText()}}")
+        AlertDialog.Builder(this).setTitle("PMDDcam · 0.3.0").setMessage("Fotografiere einen tieferen Raum.\n\nPMDD 4.0 — Perceptual Motion & Depth Design\nKonzept: Kolja Werner Schumann · kosch.cloud\nHuman-AI-Co-Design mit ChatGPT.\n\nDie Fotoverarbeitung und Erkennung laufen auf deinem Gerät. Originale werden getrennt von Effekten gespeichert. Zum Sichern außerhalb der App ein PMDD-Projekt exportieren.\n\nStatische PMDD-Illusionen und interaktive 2.5D-Parallaxe sind getrennte Modi. Tiefen werden aus einem Foto geschätzt; verdeckte Rückseiten kann das Foto nicht zeigen. Die ${Styles.all.size} Stile sind lokale Bildverfahren. PMDD Vivid ist der kräftige Standardlook; er erzeugt keine neuen Motive.\n\nMiDaS v2.1 und SSD-MobileNet (MIT), ONNX Runtime (MIT), AndroidX (Apache 2.0), Google ML Kit.\n\n${assets.open("THIRD_PARTY.txt").bufferedReader().use{it.readText()}}")
             .setPositiveButton("Schließen",null).setNeutralButton("PMDD-Geschichte"){_,_->startActivity(Intent(Intent.ACTION_VIEW,Uri.parse("https://kosch.cloud/blog/pmdd---die-magie-hinter-der-illusion--wie-wahrnehmung-und-ki-zu-lebendigen-bildern-verschmelzen")))}.setNegativeButton("GitHub"){_,_->startActivity(Intent(Intent.ACTION_VIEW,Uri.parse("https://github.com/chekento/PMDDcam")))}.show()
     }
 
@@ -529,7 +543,8 @@ class MainActivity:ComponentActivity(),SensorEventListener {
         popup?.dismiss()
         val panel=column().apply{setPadding(dp(8),dp(8),dp(8),dp(8))}
         panel.addView(label(title.uppercase(Locale.GERMAN),10f,accent,true).apply{setPadding(dp(14),dp(8),dp(14),dp(10))})
-        val menu=PopupWindow(panel,minOf(dp(320),root.width-dp(32)),-2,true).apply{setBackgroundDrawable(shape(0xff182330.toInt(),24f));elevation=dp(18).toFloat();isOutsideTouchable=true;inputMethodMode=PopupWindow.INPUT_METHOD_NOT_NEEDED}
+        val menuScroll=scroll(panel)
+        val menu=PopupWindow(menuScroll,minOf(dp(320),root.width-dp(32)),-2,true).apply{setBackgroundDrawable(shape(0xff182330.toInt(),24f));elevation=dp(18).toFloat();isOutsideTouchable=true;inputMethodMode=PopupWindow.INPUT_METHOD_NOT_NEEDED}
         items.forEach{item->
             val entry=row().apply{gravity=Gravity.CENTER_VERTICAL;setPadding(dp(12),dp(10),dp(12),dp(10));minimumHeight=dp(58);background=ripple(Color.TRANSPARENT,16f);isFocusable=true;contentDescription=item.title}
             entry.addView(ImageView(this).apply{setImageDrawable(UiIcon(item.icon,accent))},LinearLayout.LayoutParams(dp(23),dp(23)))
@@ -537,10 +552,11 @@ class MainActivity:ComponentActivity(),SensorEventListener {
             entry.setOnClickListener{menu.dismiss();item.action()};panel.addView(entry,LinearLayout.LayoutParams(-1,-2))
         }
         val maxHeight=root.height-safeTop-safeBottom-dp(24)
-        panel.measure(View.MeasureSpec.makeMeasureSpec(menu.width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(maxHeight,View.MeasureSpec.AT_MOST))
+        menuScroll.measure(View.MeasureSpec.makeMeasureSpec(menu.width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(maxHeight.coerceAtLeast(dp(80)),View.MeasureSpec.AT_MOST))
+        menu.height=menuScroll.measuredHeight
         val where=IntArray(2);anchor.getLocationInWindow(where)
-        val y=if(where[1]>root.height/2)where[1]-panel.measuredHeight-dp(10) else where[1]+anchor.height+dp(8)
-        popup=menu;menu.showAtLocation(root,Gravity.TOP or Gravity.START,(where[0]+anchor.width-menu.width).coerceIn(dp(16),maxOf(dp(16),root.width-menu.width-dp(16))),y.coerceIn(safeTop+dp(4),maxOf(safeTop+dp(4),root.height-safeBottom-panel.measuredHeight-dp(4))))
+        val y=if(where[1]>root.height/2)where[1]-menuScroll.measuredHeight-dp(10) else where[1]+anchor.height+dp(8)
+        popup=menu;menu.showAtLocation(root,Gravity.TOP or Gravity.START,(where[0]+anchor.width-menu.width).coerceIn(dp(16),maxOf(dp(16),root.width-menu.width-dp(16))),y.coerceIn(safeTop+dp(4),maxOf(safeTop+dp(4),root.height-safeBottom-menuScroll.measuredHeight-dp(4))))
     }
     private fun shape(color:Int,radius:Float)=GradientDrawable().apply{setColor(color);cornerRadius=dp(radius).toFloat()}
     private fun dp(value:Int)=(value*resources.displayMetrics.density).roundToInt()
@@ -560,6 +576,6 @@ class MainActivity:ComponentActivity(),SensorEventListener {
     }
     private fun message(text:String){if(!isFinishing)AlertDialog.Builder(this).setMessage(text).setPositiveButton("OK",null).show()}
     override fun onPause(){popup?.dismiss();stopTracking();viewer?.onPause();super.onPause()}
-    override fun onResume(){super.onResume();immersive();viewer?.onResume()}
-    override fun onDestroy(){rendering?.cancel();task?.cancel();stopTracking();viewer?.release();provider?.unbindAll();super.onDestroy()}
+    override fun onResume(){super.onResume();immersive();viewer?.onResume();shutterSound.refresh()}
+    override fun onDestroy(){shutterSound.close();rendering?.cancel();task?.cancel();stopTracking();viewer?.release();provider?.unbindAll();super.onDestroy()}
 }

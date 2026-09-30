@@ -1,4 +1,4 @@
-# PMDDcam 0.2.0 – Umsetzung
+# PMDDcam 0.3.0 – Umsetzung
 
 ## Datenfluss
 
@@ -26,6 +26,16 @@ Die Tiefenkarte bleibt kontinuierlich. Farbgewichtete bilineare Interpolation f�
 Die Tiefenstärke reicht bis 2,5, Bewegungs- und Parallaxenstärke bis 2,0. Der statische Kontrastgewinn wächst überproportional; die interaktive Verschiebung wächst kontinuierlich bis zu einer begrenzten Auslenkung. Der Viewer interpoliert den Schnittpunkt im Tiefenfeld zwischen 8–128 Abtastebenen. Stiloperationen werden vor der Stilmischung ausgeführt, sodass 0 % jeden Stil vollständig deaktiviert.
 
 CameraX-Preview und Aufnahme teilen einen ViewPort; die FILL_CENTER-Vorschau füllt den Bildschirm und die Aufnahme übernimmt denselben Ausschnitt. Bedienelemente liegen mit System-/Cutout-Abstand darüber. In der Bearbeitung bleibt das vollständige Foto seitenverhältnistreu. Original/PMDD ist direkt erreichbar, weitere Einstellungen liegen in den drei Menüs Looks, PMDD und Werkzeuge.
+
+## PMDD Vivid und Auslöseton ab 0.3.0
+
+`SceneTone` berechnet eine kantenbewusste Beleuchtungsbasis mit geführter Filterung auf maximal 512 Pixeln längster Kante. Die Koeffizienten werden mit der hochaufgelösten Bildluminanz rekonstruiert; ein robuster Schwarz-/Weißpunkt, selektive Schattenanhebung und eine begrenzte S-Kurve erhalten Tonwertabstufungen. Fotografierte Farben steuern die Blau-/Grünabstimmung. Vivid erzeugt keine Sonnenstrahlen, Blätter oder neuen Objekte. Seine gesamte Wirkung folgt dem Regler Stilmischung.
+
+Der gemeinsame PMDD-Schritt begrenzt großflächigen Dunst unabhängig vom überproportionalen Tiefengewinn, reduziert Detailüberschwinger an harten Kanten und nutzt den verfügbaren Tonwertraum statt dunkle Werte linear abzuschneiden. Neue Rezepte verwenden 96 Abtastebenen, Tiefe 1,25, Bewegung 0,7 und Parallaxe 1,0. Gespeicherte Werte werden weiter gelesen; Rendering-Verbesserungen gelten beim erneuten Rendern auch für vorhandene Rezepte.
+
+`ShutterSound` lädt und spielt `MediaActionSound.SHUTTER_CLICK` auf einem seriellen Hintergrund-Executor. Nur `ImageCapture.OnImageSavedCallback.onCaptureStarted()` löst den Klick aus. Die optionale SharedPreferences-Einstellung ist standardmäßig `false`. `CameraInfo.mustPlayShutterSound()` wird beim Vorladen und erneut beim Aufnahmebeginn abgefragt; verpflichtende Gerätevorgaben haben Vorrang. Schlägt die Richtlinienabfrage fehl, bleibt der Ton vorsichtshalber aktiv. Beim Schließen wird Audio nach ausstehenden Aufnahmen genau einmal freigegeben. Lautstärke und Systemrichtlinien werden nicht umgangen.
+
+Offizielle Android-Schnittstellen: [CameraInfo.mustPlayShutterSound](https://developer.android.com/reference/androidx/camera/core/CameraInfo#mustPlayShutterSound()), [onCaptureStarted](https://developer.android.com/reference/androidx/camera/core/ImageCapture.OnImageSavedCallback#onCaptureStarted()), [MediaActionSound](https://developer.android.com/reference/android/media/MediaActionSound). Die Geräteabfrage ist eine technische Richtlinie, keine weltweite rechtliche Zertifizierung der App.
 
 ## Dateien pro Projekt
 

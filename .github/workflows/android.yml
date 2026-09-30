@@ -34,9 +34,9 @@ jobs:
       - name: Prepare download
         run: |
           mkdir -p release
-          cp app/build/outputs/apk/release/app-release.apk release/PMDDcam-0.2.0.apk
+          cp app/build/outputs/apk/release/app-release.apk release/PMDDcam-0.3.0.apk
           cd release
-          sha256sum PMDDcam-0.2.0.apk > SHA256SUMS.txt
+          sha256sum PMDDcam-0.3.0.apk > SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
           name: PMDDcam-install
@@ -112,8 +112,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          if gh release view v0.2.0 >/dev/null 2>&1; then
-            gh release upload v0.2.0 release/* --clobber
+          if gh release view v0.3.0 >/dev/null 2>&1; then
+            gh release upload v0.3.0 release/* --clobber
           else
-            gh release create v0.2.0 release/* --target '${{ github.sha }}' --title 'PMDDcam 0.2.0 · Android Preview' --prerelease --notes 'Fullscreen camera and compact popup menus; direct Original/PMDD switch; continuous depth shading without depth-edge emboss or global wave overlays; depth up to 250%, motion and parallax up to 200%; reworked 60 styles. Offline models and original-preserving projects. Stable preview signing key supports updates. See CHANGELOG for details.'
+            gh release create v0.3.0 release/* --target '${{ github.sha }}' --title 'PMDDcam 0.3.0 · Android Preview' --prerelease --notes 'PMDD Vivid is the new default: scene-aware shadow recovery, richer colors and protected highlights. Stronger initial depth and parallax, less haze and edge overshoot. 61 local styles, visible 3D viewer button and direct Original/PMDD switch. Optional system shutter sound defaults off and follows mandatory Android device policy. Offline processing and original-preserving projects. See CHANGELOG for details.'
           fi
