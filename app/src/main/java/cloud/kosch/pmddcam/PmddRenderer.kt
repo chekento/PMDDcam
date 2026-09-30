@@ -11,7 +11,8 @@ object MotionMath {
     }
     fun mask(o:SceneObject,u:Float,v:Float,d:Float):Float {
         if(!o.enabled)return 0f
-        if(o.id==999)return 1-smooth(.18f,.52f,d)
+        if(o.id==999 && o.mask==null)return 0f
+        o.mask?.let{return it.sample(u,v)}
         val w=(o.right-o.left).coerceAtLeast(.001f);val h=(o.bottom-o.top).coerceAtLeast(.001f)
         val x=(u-o.left)/w;val y=(v-o.top)/h
         if(x !in 0f..1f || y !in 0f..1f)return 0f
@@ -19,26 +20,23 @@ object MotionMath {
         if(o.face || o.overrideDepth)return edge
         return edge*(1-smooth(.18f,.5f,abs(d-o.depth)))
     }
-    fun wave(phase:Float):Float {
-        // Continuous, zero-mean asymmetry: no hard luminance steps or stripe edges.
-        val a=(phase-floor(phase))*2f*PI.toFloat()
-        return -sin(a)*.78f-sin(2*a+.65f)*.22f
-    }
-    fun signal(o:SceneObject,u:Float,v:Float,scale:Float,samplingEdge:Float=1024f):Float {
-        val x=u-(o.left+o.right)/2;val y=v-(o.top+o.bottom)/2
-        val angle=o.angle*PI.toFloat()/180
-        val frequency=min(18f+scale*50f+o.speed*22f,max(2f,samplingEdge/8f))
-        val along=x*cos(angle)+y*sin(angle);val radius=sqrt(x*x+y*y)
-        val phase=when(o.motion) {
-            Motion.APPROACH -> -radius*frequency
-            Motion.RETREAT -> radius*frequency
-            Motion.ROTATE -> atan2(y,x)*frequency*.13f+radius*frequency*.15f
-            Motion.PULSE -> radius*frequency+sin(radius*25)*.35f
-            Motion.FLOW -> along*frequency+sin((x*sin(angle)-y*cos(angle))*25)*.7f
-            Motion.DRIFT -> along*frequency
+    data class Direction(val x:Float,val y:Float)
+    fun direction(o:SceneObject,u:Float,v:Float):Direction{
+        val angle=o.angle*PI.toFloat()/180;val dx=cos(angle);val dy=sin(angle)
+        val x=(u-(o.left+o.right)/2)/(o.right-o.left).coerceAtLeast(.01f)
+        val y=(v-(o.top+o.bottom)/2)/(o.bottom-o.top).coerceAtLeast(.01f)
+        val radius=max(.12f,hypot(x,y));val rx=x/radius;val ry=y/radius
+        val vx:Float;val vy:Float
+        when(o.motion){
+            Motion.APPROACH,Motion.PULSE->{vx=rx*.8f+dx*.2f;vy=ry*.8f+dy*.2f}
+            Motion.RETREAT->{vx=-rx*.8f+dx*.2f;vy=-ry*.8f+dy*.2f}
+            Motion.ROTATE->{vx=-ry;vy=rx}
+            Motion.FLOW->{vx=dx;vy=dy+y*.3f}
+            Motion.DRIFT->{vx=dx;vy=dy}
         }
-        return wave(phase)*.83f+wave(phase*.51f+.18f)*.17f
+        val length=max(.1f,hypot(vx,vy));return Direction(vx/length,vy/length)
     }
+
 }
 
 data class RenderResult(val image:Bitmap,val depth:DepthMap)
@@ -189,18 +187,13 @@ object PmddRenderer {
                 sr=sr*(1-style.lift)+style.lift+grain;sg=sg*(1-style.lift)+style.lift+grain;sb=sb*(1-style.lift)+style.lift+grain
                 sr=red+(sr-red)*r.styleMix;sg=green+(sg-green)*r.styleMix;sb=blue+(sb-blue)*r.styleMix
                 val d=guide.sample(u,v,src)
-                var faceWeight=0f;var anchor=0f;var motion=0f
+                var faceWeight=0f;var anchor=0f;var motionWeight=0f;var mover:SceneObject?=null
                 for(o in objects){
                     val weight=MotionMath.mask(o,u,v,d);if(weight<.001f)continue
                     if(o.face && r.protectFaces)faceWeight=max(faceWeight,weight)
                     if(o.role==Role.ANCHOR)anchor=max(anchor,weight)
-                    else if(r.motion){
-                        // Atmosphere uses photographed directional detail, not a screen-wide pattern.
-                        val signal=if(o.id==999){
-                            val a=o.angle*PI.toFloat()/180
-                            ((gx*cos(a)+gy*sin(a))*6f).coerceIn(-1f,1f)
-                        } else MotionMath.signal(o,u,v,r.motionScale,shortEdge.toFloat())
-                        motion+=signal*weight*o.intensity
+                    else if(r.motion && weight*o.intensity>motionWeight){
+                        motionWeight=weight*o.intensity;mover=o
                     }
                 }
                 val stability=max(faceWeight,if(r.lockAnchors)anchor else 0f)
@@ -219,8 +212,18 @@ object PmddRenderer {
                 val radial=sqrt((u-.5f).pow(2)+(v-.5f).pow(2))*1.414f
                 val periphery=(1-r.peripheral)+r.peripheral*MotionMath.smooth(.15f,.75f,radial)
                 val structure=MotionMath.smooth(.015f,.1f,abs(detail)+edge*.35f)
-                val illusion=(motion.coerceIn(-1.2f,1.2f)*detail*r.motionAmount*1.7f*structure*periphery*(1-stability)*
-                    ((1-r.depthCoupling)+r.depthCoupling*(.3f+d*.7f))*geometry).coerceIn(-.16f,.16f)
+                // An asymmetric local edge sequence follows the object's direction. No periodic overlay.
+                var directionalCue=0f
+                mover?.let{o->
+                    val direction=MotionMath.direction(o,u,v)
+                    val step=max(1,(shortEdge/(260f+r.motionScale*260f)).roundToInt())
+                    val dx=(direction.x*step).roundToInt();val dy=(direction.y*step).roundToInt()
+                    fun at(offset:Int)=luma(pixels[(y+dy*offset).coerceIn(0,height-1)*width+(x+dx*offset).coerceIn(0,width-1)])
+                    directionalCue=(.10f*at(-2)-.80f*at(-1)+.46f*gray+.56f*at(1)-.32f*at(2))*(.6f+.8f*o.speed)
+                }
+                val motionGain=r.motionAmount*(.65f+.45f*r.motionAmount)
+                val illusion=(directionalCue*motionWeight*motionGain*structure*periphery*(1-stability)*
+                    ((1-r.depthCoupling)+r.depthCoupling*(.45f+d*.55f))*geometry).coerceIn(-.13f,.13f)
                 val micro=detail*noise*r.texture*.12f*d*(1-faceWeight)
                 val tone=local+contact+illusion+micro+r.exposure*.3f-r.vignette*radial.pow(2)*.22f
                 sr=depthTone(sr,contrast,tone);sg=depthTone(sg,contrast,tone);sb=depthTone(sb,contrast,tone)

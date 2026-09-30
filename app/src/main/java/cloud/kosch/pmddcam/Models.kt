@@ -93,12 +93,13 @@ data class SceneObject(
     var depth:Float = .65f,
     var overrideDepth:Boolean = false,
     val face:Boolean = false,
-    var enabled:Boolean = true
+    var enabled:Boolean = true,
+    val mask:RegionMask? = null
 ) {
     fun json()=JSONObject().apply {
         put("id",id);put("name",name);put("bounds",JSONArray(listOf(left,top,right,bottom)))
         put("role",role.name);put("motion",motion.name);put("angle",angle);put("speed",speed)
-        put("intensity",intensity);put("depth",depth);put("overrideDepth",overrideDepth);put("face",face);put("enabled",enabled)
+        put("intensity",intensity);put("depth",depth);put("overrideDepth",overrideDepth);put("face",face);put("enabled",enabled);mask?.let{put("mask",it.json())}
     }
     companion object {
         fun from(j:JSONObject): SceneObject {
@@ -109,7 +110,7 @@ data class SceneObject(
                 runCatching { Motion.valueOf(j.getString("motion")) }.getOrDefault(Motion.DRIFT),
                 j.optDouble("angle",25.0).toFloat().safe(25f,0f,360f),j.optDouble("speed",.5).toFloat().safe(.5f),
                 j.optDouble("intensity",.5).toFloat().safe(.5f),j.optDouble("depth",.65).toFloat().safe(.65f),
-                j.optBoolean("overrideDepth"),j.optBoolean("face"),j.optBoolean("enabled",true))
+                j.optBoolean("overrideDepth"),j.optBoolean("face"),j.optBoolean("enabled",true),if(j.has("mask"))RegionMask.from(j.getJSONObject("mask")) else null)
         }
     }
 }

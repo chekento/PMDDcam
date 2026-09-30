@@ -50,7 +50,6 @@ class CoreTest {
         assertEquals(0f,MotionMath.mask(o,.1f,.4f,.7f),0f)
         assertTrue(MotionMath.mask(o,.5f,.5f,.7f)>.99f)
         o.enabled=false;assertEquals(0f,MotionMath.mask(o,.5f,.5f,.7f),0f)
-        assertTrue(MotionMath.wave(.1f)<MotionMath.wave(.6f))
     }
     @Test fun `flat surfaces cannot acquire bands or phantom shadows from depth and motion`()=runBlocking {
         val photo=Bitmap.createBitmap(128,96,Bitmap.Config.ARGB_8888).apply{eraseColor(0xff9cacbd.toInt())}

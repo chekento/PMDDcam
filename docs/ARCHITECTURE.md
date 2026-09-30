@@ -37,6 +37,16 @@ Der gemeinsame PMDD-Schritt begrenzt großflächigen Dunst unabhängig vom über
 
 Offizielle Android-Schnittstellen: [CameraInfo.mustPlayShutterSound](https://developer.android.com/reference/androidx/camera/core/CameraInfo#mustPlayShutterSound()), [onCaptureStarted](https://developer.android.com/reference/androidx/camera/core/ImageCapture.OnImageSavedCallback#onCaptureStarted()), [MediaActionSound](https://developer.android.com/reference/android/media/MediaActionSound). Die Geräteabfrage ist eine technische Richtlinie, keine weltweite rechtliche Zertifizierung der App.
 
+## Statische Illusion und interaktive Objektbewegung
+
+Ab 0.3.0 ordnet `ObjectMotion` bewegungsfähige COCO-Klassen einer dynamischen Rolle zu. Menschen, Landfahrzeuge und Tiere erhalten vorwiegend Approach, Flugzeuge/Vögel Drift, Boote Flow. Das erkennt keine tatsächliche Geschwindigkeit im Einzelbild; Nutzer können etwa geparkte Autos zu Ankern ändern. Gesichtsmasken bleiben geschützt.
+
+Die statische Pipeline verstärkt eine asymmetrische Folge fotografierter Helligkeitskanten entlang des lokalen Objektvektors. Der Kernel hat Summe null, erzeugt deshalb auf homogenen Flächen keine Struktur. Intensität, Tempo, Tiefe, Textur, Peripherie und Anker-/Gesichtsschutz begrenzen die Wirkung. Es gibt keine periodische Welle mehr. Das sind gestaltete Wahrnehmungshinweise, keine validierte Garantie einer Bewegungsillusion bei Kopfbewegung.
+
+`AtmosphereAnalyzer` schlägt in hellen, neutralen, fernen und mit dem oberen Himmel verbundenen Regionen Wolken beziehungsweise Dunst/Nebel vor. Ein spezialisierter semantischer Wetterklassifikator ist nicht eingebaut; helle Flächen und ungewöhnliche Szenen bleiben mögliche Fehlerquellen. Vorschläge sind entsprechend beschriftet. `RegionMask` speichert gefiederte 8-Bit-Masken im Projekt; Hintergrund und Architektur außerhalb erhalten kein Bewegungsfeld. Alte unmaskierte Ganzbild-Atmosphäre (ID 999) ist wirkungslos. Vorhandene manuelle Rollen werden nicht automatisch überschrieben.
+
+`HeadPose` kalibriert über fünf gültige Gesichtsmessungen und kombiniert relative Translation, Euler-Winkel und logarithmische Größenänderung. `HeadTracker` hält die Gesichtsidentität und setzt bei einem Wechsel oder längeren Verlust neu an. `MotionField` liefert zusätzlich zur Tiefentextur eine Richtungs-/Stärketextur an OpenGL. Der Viewer verschiebt dynamische Bildoberflächen abhängig vom Blickpunkt, mit maximal 1,8 % zusätzlicher UV-Auslenkung. Anker bekommen keine unabhängige Bewegung. Verdeckte Geometrie wird nicht neu erfunden: Es bleibt eine begrenzte 2.5D-Reprojektion mit möglichen Dehnungen an Objektgrenzen. Ohne aktive interaktive Steuerung bleibt die Pixelansicht statisch.
+
 ## Dateien pro Projekt
 
 - `original.image`: originale JPEG-/PNG-/WebP-/HEIF-Bytes. Niemals Renderziel.

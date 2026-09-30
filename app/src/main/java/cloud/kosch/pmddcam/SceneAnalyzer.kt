@@ -51,7 +51,7 @@ class SceneAnalyzer(private val context:Context) {
                 }
             } catch(e:CancellationException){throw e} catch(_:Exception){notes+="Personenmaske nicht verfügbar; die Modell-Tiefenkarte bleibt aktiv."} finally{segmenter.close()}
         }
-        objects.add(0,SceneObject(999,"Atmosphärische Ferne",0f,0f,1f,1f,Role.ATMOSPHERE,Motion.DRIFT,25f,.3f,.45f,.18f))
+        if(detect)objects+=AtmosphereAnalyzer.detect(bitmap,depth)
         Analysis(depth,objects,notes.joinToString(" "))
     } }
 

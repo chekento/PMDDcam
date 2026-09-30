@@ -320,7 +320,7 @@ class MainActivity:ComponentActivity(),SensorEventListener {
     }
     private fun showCurrentImage(){
         val r=result?:return;val p=project?:return
-        viewer?.setImage(if(originalShown)source?:r.image else r.image,r.depth,p.recipe)
+        viewer?.setImage(if(originalShown)source?:r.image else r.image,r.depth,p.recipe,p.objects)
         if(originalShown){viewer?.active=false;viewer?.center();stopTracking()}
         updateImageChrome()
     }
@@ -409,7 +409,7 @@ class MainActivity:ComponentActivity(),SensorEventListener {
 
     private fun objectsDialog(){
         val p=project?:return;val body=column().apply{setPadding(dp(16),0,dp(16),dp(16))}
-        body.addView(label("Jedes Objekt erhält eine eigene Bewegungsidentität. Automatisch erkannte feste Objekte starten als ruhige Anker.",13f,muted))
+        body.addView(label("Jedes Objekt erhält eine eigene Bewegungsidentität. Menschen, Tiere und Fahrzeuge starten dynamisch; feste Objekte bleiben Anker. Wolken-/Nebelvorschläge bitte prüfen.",13f,muted))
         val dialog=AlertDialog.Builder(this).setTitle("Objekte & Bewegungsfelder").setView(scroll(body)).setNegativeButton("Schließen",null).create()
         p.objects.forEach{o->body.addView(button("${o.name}\n${o.role.title} · ${o.motion.title}"){dialog.dismiss();objectEditor(o.id)})}
         body.addView(button("+ Objektbereich markieren",true){dialog.dismiss();addRegion()})
@@ -428,7 +428,7 @@ class MainActivity:ComponentActivity(),SensorEventListener {
         choose(body,"Hauptbewegung",Motion.entries.map{it.title},o.motion.ordinal){o.motion=Motion.entries[it]}
         slider(body,"Richtung · Grad",o.angle,0f,360f){o.angle=it};slider(body,"Bewegungshinweis · Tempo",o.speed){o.speed=it};slider(body,"Lokale Intensität",o.intensity){o.intensity=it}
         check(body,"Eigene Tiefenposition",o.overrideDepth){o.overrideDepth=it};slider(body,"Tiefe · fern → nah",o.depth){o.depth=it}
-        body.addView(label("Tempo steuert statische Texturdichte und Richtungshinweise. Das exportierte Foto besitzt keine animierten Frames.",12f,muted))
+        body.addView(label("Tempo steuert die statischen Richtungshinweise. Dynamische Bereiche reagieren zusätzlich in der 3D-Ansicht. PNG/JPEG bleiben statisch.",12f,muted))
         val dialog=AlertDialog.Builder(this).setTitle("Objekt gestalten").setView(scroll(body)).setPositiveButton("Übernehmen"){_,_->snapshot();o.name=name.text.toString().take(80).ifBlank{current.name};p.objects[p.objects.indexOf(current)]=o;changed()}.setNegativeButton("Abbrechen",null).setNeutralButton("Entfernen"){_,_->snapshot();p.objects.remove(current);changed()}.create();showDialog(dialog)
     }
     private fun paintDepth(){

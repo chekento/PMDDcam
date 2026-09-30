@@ -131,11 +131,14 @@ PMDDcam verbindet eine native Android-Kamera mit **PMDD 4.0 — Perceptual Motio
 - **PMDD Vivid** als kräftiger fotografischer Standard: gezielte Schattenaufhellung, lebendigere Farben, erhaltene Lichter und lokale Zeichnung
 - deutlich weniger milchiger Dunst und begrenzte Kontrastverstärkung an harten Kanten
 - neue Vorgaben: 96 Ebenen, 125 % Tiefe, 70 % Bewegungshinweise, 100 % interaktive Parallaxe
+- bewegliche COCO-Klassen (Menschen, Tiere, Fahrzeuge) erhalten automatische Dynamikrollen; feste Objekte bleiben ruhige Anker
+- lokale asymmetrische Kontrastfolgen für das statische Foto statt periodischer Wellen; Wolken-/Dunstbereiche als maskierte, editierbare Vorschläge
+- Head-Tracking mit Kalibrierung, Kopfneigung und Abstand; zusätzliche objektgebundene Verschiebung in der 2.5D-Ansicht
 - **3D ansehen** direkt neben dem dauerhaft sichtbaren **Original ↔ PMDD**-Umschalter
 - optionaler System-Auslöseton, standardmäßig aus; eine von Android gemeldete Tonpflicht hat Vorrang
 - 61 lokale Stilrezepte; gespeicherte Projektwerte und eigene Aufnahmevorgaben bleiben erhalten
 
-Für ein vorhandenes Projekt: **PMDD → Alle Einstellungen → PMDD Vivid · neue Standardabstimmung**. Nur den Look ändern: **Looks → Foto → PMDD Vivid**. Eigene Aufnahmevorgaben lassen sich im Kameramenü über **Aufnahme-Looks → PMDD-Vorgaben** umstellen.
+Für ein vorhandenes Projekt: **PMDD → Alle Einstellungen → PMDD Vivid · neue Standardabstimmung**. Für die neue automatische Objektzuordnung in alten Projekten: **Werkzeuge → Objekte → Objekte und Tiefe neu analysieren** (ersetzt manuelle Tiefen-/Objektänderungen nach Bestätigung). Nur den Look ändern: **Looks → Foto → PMDD Vivid**. Eigene Aufnahmevorgaben lassen sich im Kameramenü über **Aufnahme-Looks → PMDD-Vorgaben** umstellen.
 
 PMDD Vivid orientiert sich an einem kräftigen, räumlichen Foto-Look. Es ist kein Aufruf von ChatGPT oder eines generativen Bilddienstes: Neue Blätter, Wolken, Lichtquellen oder verdeckte Objekte werden nicht erfunden. Für tatsächlich wechselnde Perspektiven **3D ansehen** verwenden; PNG/JPEG bleiben statische Fotos.
 
@@ -165,9 +168,11 @@ Die Stile verändern Pixel mit lokalen Bildverfahren, unter anderem Kantenzeichn
 
 **PMDD-Foto:** Ein statisches Einzelbild mit Tiefenstaffelung, lokaler Kontrastarchitektur, stabilen Ankern, atmosphärischer Trennung und objektgebundenen Bewegungshinweisen. Die wahrgenommene Wirkung hängt von Motiv, Display und Betrachtungsbedingungen ab.
 
-**Interaktiver Viewer:** Eine zusätzliche 2.5D-Ansicht reagiert tatsächlich auf Touch, Geräteneigung und optional auf die relative Kopfposition vor der Frontkamera. Die Kopfsteuerung speichert keine Kameraaufnahme. Statische PNG/JPEG-Exporte enthalten diese Interaktion nicht.
+**Interaktiver Viewer:** Eine zusätzliche 2.5D-Ansicht reagiert tatsächlich auf Touch, Geräteneigung und optional auf die relative Kopfposition vor der Frontkamera. Dynamische Bereiche erhalten zusätzlich eine begrenzte eigene Verschiebung; feste Flächen ändern nur ihre Perspektive. Das sind tiefengeführte Fotooberflächen, keine rekonstruierten vollständigen 3D-Objekte. Die Kopfsteuerung speichert keine Kameraaufnahme. Statische PNG/JPEG-Exporte enthalten diese Interaktion nicht.
 
-Ein Einzelbild liefert keine metrisch vermessene 3D-Geometrie und keine echten verdeckten Rückseiten. MiDaS schätzt **relative** Tiefe. Die 96 Standardebenen beschreiben die Viewer-Abtastung, nicht 96 automatisch freigestellte semantische Objekte.
+Ein Einzelbild liefert keine metrisch vermessene 3D-Geometrie und keine echten verdeckten Rückseiten. MiDaS schätzt **relative** Tiefe. Das Objektmodell erkennt bewegungsfähige Klassen, aber keine reale Geschwindigkeit aus einem Foto: Auch ein geparktes Auto kann deshalb zunächst „dynamisch“ sein. Wolken und Dunst/Nebel werden konservativ aus Farbe, Bildstruktur und relativer Tiefe vorgeschlagen, nicht durch einen spezialisierten Wetterklassifikator sicher identifiziert. Rollen und Maskenbereiche lassen sich prüfen, deaktivieren oder manuell ergänzen.
+
+Die 96 Standardebenen beschreiben die Viewer-Abtastung, nicht 96 automatisch freigestellte semantische Objekte.
 
 ---
 

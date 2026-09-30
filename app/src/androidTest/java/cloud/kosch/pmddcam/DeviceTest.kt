@@ -4,6 +4,9 @@ import android.Manifest
 import android.content.Intent
 import android.content.ContentValues
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.view.PixelCopy
 import android.provider.MediaStore
 import android.graphics.*
 import android.os.SystemClock
@@ -39,6 +42,7 @@ class DeviceTest {
         val analysis=SceneAnalyzer(context).analyze(photo,true){}
         assertEquals("Every bundled detector initializes offline", "", analysis.note)
         assertTrue("The detector recognizes the dogs in the reference photo",analysis.objects.count{it.name.startsWith("Hund ·")}>=2)
+        assertTrue("Recognized dogs receive dynamic motion roles",analysis.objects.filter{it.name.startsWith("Hund ·")}.all{it.role==Role.DYNAMIC&&it.intensity>.5f})
         assertEquals(256,analysis.depth.width);assertTrue(analysis.depth.values.all{it.isFinite()&&it in 0f..1f})
         assertTrue(analysis.depth.values.max()-analysis.depth.values.min()>.5f)
         p.objects=analysis.objects;p.ready=true;store.saveDepth(p.id,analysis.depth,true);store.saveDepth(p.id,analysis.depth);store.save(p)
@@ -104,13 +108,13 @@ class DeviceTest {
             icon("Kamera-Einstellungen")
             val sound=awaitUi(device,By.textStartsWith("Auslöseton:"),20_000,"shutter sound setting")
             if(!sound.text.contains("Gerät")){
-                assertEquals("Auslöseton: Aus",sound.text);shot("camera-settings.png");sound.click();device.waitForIdle()
+                assertEquals("Auslöseton: Aus",sound.text);shot("camera-settings.png");sound.click();awaitUi(device,By.text("Auslöseton: An"),20_000,"sound enabled in camera status");device.waitForIdle()
                 assertTrue("Sound toggle persists",context.getSharedPreferences("pmdd",0).getBoolean("shutterSound",false))
                 scenario.recreate()
                 val restarted=CountDownLatch(1)
                 scenario.onActivity{activity->cameraView(activity.window.decorView)!!.previewStreamState.observe(activity){if(it==PreviewView.StreamState.STREAMING)restarted.countDown()}}
                 assertTrue("Camera resumes after sound preference restore",restarted.await(30,TimeUnit.SECONDS))
-                icon("Kamera-Einstellungen");awaitUi(device,By.text("Auslöseton: An"),20_000,"restored sound setting").click();device.waitForIdle()
+                icon("Kamera-Einstellungen");awaitUi(device,By.text("Auslöseton: An"),20_000,"restored sound setting").click();awaitUi(device,By.text("Auslöseton: Aus"),20_000,"sound disabled in camera status");device.waitForIdle()
                 assertFalse(context.getSharedPreferences("pmdd",0).getBoolean("shutterSound",false))
             }else device.pressBack()
             val shutter=awaitUi(device,By.desc("Foto aufnehmen"),20_000,"camera shutter");shot("camera.png");shutter.click()
@@ -133,6 +137,40 @@ class DeviceTest {
             awaitUi(device,By.text("Cinematic"),30_000,"persisted Cinematic style")
             assertArrayEquals("Editing preserves the camera original",original,store.original(captured.id).readBytes())
         }
+    }
+
+    @Test fun viewerRendersSixDirectionsAndKeepsStaticModeStill() {
+        val instrumentation=InstrumentationRegistry.getInstrumentation();val device=UiDevice.getInstance(instrumentation)
+        device.executeShellCommand("pm grant ${instrumentation.targetContext.packageName} ${Manifest.permission.CAMERA}")
+        val image=Bitmap.createBitmap(IntArray(128*128){i->val x=i%128;val y=i/128
+            if(x in 30..86&&y in 25..92){if((x/5+y/7)%2==0)0xffffaa20.toInt() else 0xff3d9250.toInt()}
+            else if((x/12+y/12)%2==0)0xff293c7e.toInt() else 0xffa4c7e2.toInt()},128,128,Bitmap.Config.ARGB_8888)
+        val depth=DepthMap(64,64,FloatArray(4096){i->if(i%64 in 15..43&&i/64 in 12..46).85f else .18f})
+        val objects=listOf(SceneObject(1,"Moving foreground",.23f,.18f,.69f,.74f,Role.DYNAMIC,Motion.DRIFT,15f,.7f,.9f,.85f))
+        ActivityScenario.launch<MainActivity>(Intent(instrumentation.targetContext,MainActivity::class.java)).use{scenario->
+            lateinit var view:DepthViewer
+            scenario.onActivity{activity->view=DepthViewer(activity);activity.setContentView(view);view.setImage(image,depth,Recipe(),objects);view.active=true}
+            fun awaitFrame(count:Int){val deadline=SystemClock.uptimeMillis()+10_000;while(view.completedFrames<count&&SystemClock.uptimeMillis()<deadline)SystemClock.sleep(20);assertTrue("GL frame completes",view.completedFrames>=count)}
+            awaitFrame(1)
+            fun frame(x:Float,y:Float,z:Float,active:Boolean=true):Bitmap{
+                val previous=view.completedFrames
+                scenario.onActivity{view.active=active;view.setPosition(x,y,z)};awaitFrame(previous+1)
+                // A second draw ensures PixelCopy sees the requested position after buffer swap.
+                val next=view.completedFrames;view.requestRender();awaitFrame(next+1)
+                val result=Bitmap.createBitmap(192,192,Bitmap.Config.ARGB_8888);val done=CountDownLatch(1);var code=-1
+                scenario.onActivity{PixelCopy.request(view,result,{value->code=value;done.countDown()},Handler(Looper.getMainLooper()))}
+                assertTrue(done.await(10,TimeUnit.SECONDS));assertEquals(PixelCopy.SUCCESS,code);return result
+            }
+            fun difference(a:Bitmap,b:Bitmap):Double{val aa=IntArray(192*192);val bb=IntArray(aa.size);a.getPixels(aa,0,192,0,0,192,192);b.getPixels(bb,0,192,0,0,192,192);return aa.indices.sumOf{i->listOf(0,8,16).sumOf{shift->abs(((aa[i]shr shift)and 255)-((bb[i]shr shift)and 255))}}.toDouble()/aa.size/3}
+            val center=frame(0f,0f,0f)
+            for((name,position) in listOf("left" to floatArrayOf(.85f,0f,0f),"right" to floatArrayOf(-.85f,0f,0f),"up" to floatArrayOf(0f,.85f,0f),"down" to floatArrayOf(0f,-.85f,0f),"near" to floatArrayOf(0f,0f,.85f),"far" to floatArrayOf(0f,0f,-.85f))){
+                val moved=frame(position[0],position[1],position[2]);assertTrue("$name changes rendered pixels",difference(center,moved)>.2)
+                device.executeShellCommand("mkdir -p /sdcard/Download/pmddcam-tests");device.executeShellCommand("screencap -p /sdcard/Download/pmddcam-tests/axis-$name.png");moved.recycle()
+            }
+            val fixed=frame(.85f,-.85f,.85f,false)
+            assertTrue("Static output does not follow simulated head positions",difference(center,fixed)<.02)
+            fixed.recycle();center.recycle();scenario.onActivity{view.release();view.onPause()}
+        };image.recycle()
     }
 
     private fun awaitUi(device:UiDevice,selector:BySelector,timeout:Long,description:String):UiObject2 {

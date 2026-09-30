@@ -43,8 +43,9 @@ class ObjectAnalyzer(private val context:Context) {
                             val top=boxes[4*i].safe(0f,0f,1f);val left=boxes[4*i+1].safe(0f,0f,1f)
                             val bottom=boxes[4*i+2].safe(1f,0f,1f);val right=boxes[4*i+3].safe(1f,0f,1f)
                             if(right-left<.01f || bottom-top<.01f)continue
+                            val profile=ObjectMotion.profile(category)
                             found+=SceneObject(found.size+1,"$label · ${(score*100).roundToInt()} %",left,top,right,bottom,
-                                Role.ANCHOR,depth=depth.sample((left+right)/2,(top+bottom)/2))
+                                profile.role,profile.motion,profile.angle,profile.speed,profile.intensity,depth.sample((left+right)/2,(top+bottom)/2))
                         }
                         return found
                     }

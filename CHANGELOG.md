@@ -5,6 +5,9 @@
 - Neuer Standardstil PMDD Vivid mit kantenbewusster Schattenaufhellung, kräftigeren Farben, geschützten Lichtern und lokaler Zeichnung. Die bisherigen 60 Stile bleiben verfügbar (61 insgesamt).
 - Stark reduzierter Dunst, begrenzte Schärfungs-/Reliefüberschwinger und Tonwertkurve mit geschützten Endpunkten statt linearer Schwarz-/Weißbeschneidung.
 - Neue Projekte starten mit 96 Ebenen, 125 % Tiefe, 70 % Bewegungshinweisen und 100 % Parallaxe. Vorhandene Rezepte und eigene Aufnahmevorgaben werden nicht überschrieben; die vollständige neue Abstimmung ist als Preset auswählbar.
+- Bewegungsfähige Klassen erhalten passende Dynamikrollen statt pauschal Anker. Statische Bewegungshinweise folgen asymmetrischen lokalen Kontrastfolgen; flache und nicht betroffene Flächen erhalten keine Bewegungsmuster.
+- Globales Atmosphärenfeld durch begrenzte, gespeicherte Wolken-/Nebelvorschläge ersetzt. Die fotografischen Vorschläge sind keine zuverlässige semantische Wettererkennung und bleiben editierbar.
+- Head-Tracking: Kalibrierung über mehrere Messungen, Translation plus Kopfneigung, logarithmischer Abstand, sanftes Rückstellen bei Gesichtsverlust. Viewer mit objektgebundener Zusatzverschiebung; echte GL-Pixelprüfung für alle sechs Bewegungsrichtungen.
 - Beschrifteter Button „3D ansehen“ neben Original ↔ PMDD; lange Pop-up-Menüs können scrollen.
 - Optionaler Android-Systemauslöseton, Standard aus. CameraX-Gerätevorgaben haben Vorrang und werden beim Aufnahmebeginn erneut abgefragt. Audioausgabe läuft außerhalb des UI-Threads; Import, Bearbeitung und Export lösen keinen Klick aus.
 - Regressionen für Tonwertabstufungen, Farbtreue, alte Rezepte, Tonrichtlinie und Audio-Lifecycle; Gerätetest für Auslöseton-Einstellung über Neustarts.
