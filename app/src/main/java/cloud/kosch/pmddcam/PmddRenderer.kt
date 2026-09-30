@@ -69,6 +69,7 @@ object PmddRenderer {
         val c64Palette=intArrayOf(0xff000000.toInt(),0xffffffff.toInt(),0xff813338.toInt(),0xff75cec8.toInt(),0xff8e3c97.toInt(),0xff56ac4d.toInt(),0xff2e2c9b.toInt(),0xffedf171.toInt(),0xff8e5029.toInt(),0xff553800.toInt(),0xffc46c71.toInt(),0xff4a4a4a.toInt(),0xff7b7b7b.toInt(),0xffa9ff9f.toInt(),0xff706deb.toInt(),0xffb2b2b2.toInt())
         val posterPalette=intArrayOf(0xff132746.toInt(),0xffe44955.toInt(),0xfff4c84e.toInt(),0xff369da7.toInt(),0xfff7edd7.toInt())
         val pocketPalette=intArrayOf(0xff162b18.toInt(),0xff385c31.toInt(),0xff85a34b.toInt(),0xffd9e995.toInt())
+        val consolePalette=when(style.id){"gameboy"->pocketPalette;"cga"->cgaPalette;"c64"->c64Palette;else->null}
         for(y in 0 until height){
             if(y%16==0)context.ensureActive()
             val v=(y+.5f)*invH
@@ -296,7 +297,11 @@ object PmddRenderer {
                     if(low<0f)chroma=min(chroma,l/(l-low).coerceAtLeast(.0001f))
                     sr=l+(sr-l)*chroma;sg=l+(sg-l)*chroma;sb=l+(sb-l)*chroma
                 }
-                output[index]=rgb(sr,sg,sb)
+                if(consolePalette!=null&&r.styleMix>=.999f){
+                    // Preserve the named console palette after depth/exposure adjustments, too.
+                    val block=(y/pixelSize*pixelSize)*width+x/pixelSize*pixelSize
+                    output[index]=if(index==block)nearestPalette(consolePalette,sr,sg,sb) else output[block]
+                }else output[index]=rgb(sr,sg,sb)
             }
         }
         return RenderResult(Bitmap.createBitmap(output,width,height,Bitmap.Config.ARGB_8888),depth)

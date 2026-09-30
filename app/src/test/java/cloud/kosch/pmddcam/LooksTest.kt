@@ -15,11 +15,11 @@ import kotlin.math.abs
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class LooksTest {
     private val neutral=Recipe(depth=0f,sharpness=0f,bokeh=0f,texture=0f,contrast=0f,vignette=0f,saturation=1f,motion=false)
-    private suspend fun render(photo:Bitmap,style:String):Bitmap=PmddRenderer.render(photo,DepthMap(8,8,FloatArray(64){.5f}),Project("style",0,neutral.copy(style=style),mutableListOf())).image
+    private suspend fun render(photo:Bitmap,style:String,recipe:Recipe=neutral):Bitmap=PmddRenderer.render(photo,DepthMap(8,8,FloatArray(64){.5f}),Project("style",0,recipe.copy(style=style),mutableListOf())).image
     @Test fun `pocket and CGA styles retain four colors and solid pixel blocks`()=runBlocking {
         val photo=Bitmap.createBitmap(IntArray(160*120){i->0xff000000.toInt()or((i%160*255/159)shl 16)or((i/160*255/119)shl 8)or((i*73)%256)},160,120,Bitmap.Config.ARGB_8888)
-        for(style in listOf("gameboy","cga")){
-            val result=render(photo,style);val values=IntArray(160*120);result.getPixels(values,0,160,0,0,160,120)
+        for(style in listOf("gameboy","cga"))for(recipe in listOf(neutral,Recipe())){
+            val result=render(photo,style,recipe);val values=IntArray(160*120);result.getPixels(values,0,160,0,0,160,120)
             assertTrue("A four-color console must not retain photographic shading",values.toSet().size<=4)
             for(y in 0 until 120 step 2)for(x in 0 until 160 step 2){assertEquals(result.getPixel(x,y),result.getPixel(x+1,y));assertEquals(result.getPixel(x,y),result.getPixel(x,y+1))}
             result.recycle()
