@@ -34,9 +34,11 @@
 
 ## 🌐 Interaktive WebApp
 
-<a href="https://raw.githack.com/chekento/PMDDcam/main/webapp/index.html"><strong>▶ PMDDcam Web direkt im Browser starten</strong></a>
+<a href="https://raw.githack.com/chekento/PMDDcam/main/webapp/index.html"><strong>▶ PMDDcam Web 0.2.0 direkt im Browser starten</strong></a>
 
-Die Browser-Version liegt als eigenständiges Unterprojekt in [`webapp/`](webapp/) und bietet Bild-Upload, Kamera, Original ↔ PMDD, 80 Looks, 8–128 Tiefenebenen, statische Bewegungsillusion, interaktive 2.5D-Parallaxe, Touch/Maus, Geräteneigung, optionales Head-Tracking und lokalen PNG-Export — ohne Cloud-Upload oder API-Schlüssel.
+Die Browser-Version liegt als eigenständiges Unterprojekt in [`webapp/`](webapp/). Sie ist jetzt mehr als eine UI-Demo: **Depth Anything V2** kann optional direkt im Browser eine KI-Tiefenkarte erzeugen, der WebGL-Viewer rendert 8–128 Tiefenebenen mit Disocclusion-Fill, und **MediaPipe Face Landmarker** steuert bei aktiviertem Head-Tracking die Perspektive über links/rechts, oben/unten und näher/weiter.
+
+Zusätzlich: 80 Look-Rezepte, deutlich getrennte Rendering-Techniken, statische PMDD-Bewegungsillusion, Split-Compare, Kamera, Pointer/Touch, Geräteneigung, lokale Projektpersistenz in IndexedDB, PWA-App-Shell, PNG-Export und PMDD-Rezept-Import/Export. Die Bildverarbeitung bleibt im Browser; externe Modelle werden nur bei Nutzung der jeweiligen KI-Funktion geladen.
 
 ## 📲 Android Preview herunterladen
 
