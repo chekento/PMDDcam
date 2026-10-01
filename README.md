@@ -13,6 +13,10 @@
 ![Cloud](https://img.shields.io/badge/photo_uploads-none-25343c)
 [![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-5b4bdb)](LICENSE)
 
+### [⬇ Android-APK · PMDDcam 0.4.0 herunterladen](https://github.com/chekento/PMDDcam/releases/download/v0.4.0/PMDDcam-0.4.0.apk)
+
+**[Versionsarchiv mit allen APKs](RELEASES.md) · [Changelog](CHANGELOG.md)**
+
 <a href="https://raw.githubusercontent.com/chekento/PMDDcam/main/docs/assets/pmddcam-hero-01.webp">
   <img src="docs/assets/pmddcam-hero-01.webp" alt="PMDDcam — Turn photos into layered PMDD art" width="100%">
 </a>
@@ -32,14 +36,6 @@
 ---
 
 
-## 🌐 Interaktive WebApp
-
-<a href="https://raw.githack.com/chekento/PMDDcam/main/webapp/index.html"><strong>▶ PMDDcam Web 0.2.0 direkt im Browser starten</strong></a>
-
-Die Browser-Version liegt als eigenständiges Unterprojekt in [`webapp/`](webapp/). Sie ist jetzt mehr als eine UI-Demo: **Depth Anything V2** kann optional direkt im Browser eine KI-Tiefenkarte erzeugen, der WebGL-Viewer rendert 8–128 Tiefenebenen mit Disocclusion-Fill, und **MediaPipe Face Landmarker** steuert bei aktiviertem Head-Tracking die Perspektive über links/rechts, oben/unten und näher/weiter.
-
-Zusätzlich: 80 Look-Rezepte, deutlich getrennte Rendering-Techniken, statische PMDD-Bewegungsillusion, Split-Compare, Kamera, Pointer/Touch, Geräteneigung, lokale Projektpersistenz in IndexedDB, PWA-App-Shell, PNG-Export und PMDD-Rezept-Import/Export. Die Bildverarbeitung bleibt im Browser; externe Modelle werden nur bei Nutzung der jeweiligen KI-Funktion geladen.
-
 ## 📲 Android Preview herunterladen
 
 <a href="https://github.com/chekento/PMDDcam/releases/download/v0.4.0/PMDDcam-0.4.0.apk">
@@ -50,16 +46,26 @@ Zusätzlich: 80 Look-Rezepte, deutlich getrennte Rendering-Techniken, statische 
 
 ### [⬇ PMDDcam 0.4.0 · APK direkt herunterladen](https://github.com/chekento/PMDDcam/releases/download/v0.4.0/PMDDcam-0.4.0.apk)
 
-Android 8.0+ · ARM64 / ARMv7 / x86_64 · Preview · ca. 229 MB  
+Android 8.0+ · ARM64 / ARMv7 / x86_64 · Preview · 239.7 MB<br>
 **SHA-256:** [SHA256SUMS.txt](https://github.com/chekento/PMDDcam/releases/download/v0.4.0/SHA256SUMS.txt)
 
 [Release & Prüfsumme](https://github.com/chekento/PMDDcam/releases/tag/v0.4.0) ·
+[Versionsarchiv · alle APKs](RELEASES.md) ·
 [Builds](https://github.com/chekento/PMDDcam/actions) ·
 [Changelog](CHANGELOG.md)
 
 </div>
 
 > Das Download-Banner lädt die APK direkt. Die übrigen Werbe- und Vergleichsbilder öffnen beim Anklicken die jeweilige Bilddatei in voller Größe.
+
+
+## 🌐 Interaktive WebApp
+
+<a href="https://raw.githack.com/chekento/PMDDcam/main/webapp/index.html"><strong>▶ PMDDcam Web 0.2.0 direkt im Browser starten</strong></a>
+
+Die Browser-Version liegt als eigenständiges Unterprojekt in [`webapp/`](webapp/). Sie ist jetzt mehr als eine UI-Demo: **Depth Anything V2** kann optional direkt im Browser eine KI-Tiefenkarte erzeugen, der WebGL-Viewer rendert 8–128 Tiefenebenen mit Disocclusion-Fill, und **MediaPipe Face Landmarker** steuert bei aktiviertem Head-Tracking die Perspektive über links/rechts, oben/unten und näher/weiter.
+
+Zusätzlich: 80 Look-Rezepte, deutlich getrennte Rendering-Techniken, statische PMDD-Bewegungsillusion, Split-Compare, Kamera, Pointer/Touch, Geräteneigung, lokale Projektpersistenz in IndexedDB, PWA-App-Shell, PNG-Export und PMDD-Rezept-Import/Export. Die Bildverarbeitung bleibt im Browser; externe Modelle werden nur bei Nutzung der jeweiligen KI-Funktion geladen.
 
 ---
 

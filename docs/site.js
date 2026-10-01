@@ -12,6 +12,19 @@
   };
   const t = {
     de:{
+      "archive":"Versionsarchiv",
+      "archiveIntro":"Aktuelle und frühere Android-Previews mit direkten APK-Downloads und SHA-256-Prüfsummen.",
+      "currentRelease":"Aktuelle Preview",
+      "release040":"80 Looks, überarbeitete Bildverfahren und eigenständige Objektanimation mit einstellbarer Stärke und Tempo.",
+      "releaseDetails":"Release-Details",
+      "allVersions":"Alle veröffentlichten Versionen",
+      "archiveNote":"Jeder APK-Link lädt genau die angegebene Version. Frühere Releases bleiben verfügbar.",
+      "version":"Version",
+      "releaseDate":"Veröffentlicht",
+      "fileSize":"Größe",
+      "releaseFiles":"Downloads und Details",
+      "current":"Aktuell",
+      "githubReleases":"Alle GitHub-Releases",
       brandTag:"PMDD Kamera für Android",home:"Übersicht",features:"Funktionen",technology:"Technik",download:"APK herunterladen",language:"Sprache",
       heroTitle:"Fotografiere einen tieferen Raum.",heroSub:"Verwandle Fotos lokal auf Android in räumlich geschichtete PMDD-Bilder – mit Originalarchiv, 80 Stilen und interaktiver Tiefe.",
       downloadNow:"PMDDcam 0.4.0 herunterladen",explore:"Funktionen ansehen",compareTitle:"Original ↔ PMDD",compareText:"Dasselbe Foto. Das Original bleibt unverändert; PMDD-Tiefe, Stil und Wirkung bleiben separat bearbeitbar.",original:"Original",enhanced:"PMDD",
@@ -22,6 +35,19 @@
       foot:"PMDD — Perceptual Motion & Depth Design · Kolja Werner Schumann (KoSch) · Human-AI-Co-Design mit ChatGPT"
     },
     en:{
+      "archive":"Version archive",
+      "archiveIntro":"Current and previous Android previews, with direct APK downloads and SHA-256 checksums.",
+      "currentRelease":"Current preview",
+      "release040":"80 looks, distinct rendering techniques and autonomous object animation with adjustable amount and speed.",
+      "releaseDetails":"Release details",
+      "allVersions":"All published versions",
+      "archiveNote":"Each APK link downloads the specified version. Earlier releases remain available.",
+      "version":"Version",
+      "releaseDate":"Published",
+      "fileSize":"Size",
+      "releaseFiles":"Downloads & details",
+      "current":"Current",
+      "githubReleases":"All GitHub releases",
       brandTag:"PMDD camera for Android",home:"Overview",features:"Features",technology:"Technology",download:"Download APK",language:"Language",
       heroTitle:"Photograph a deeper space.",heroSub:"Turn photos into layered PMDD imagery locally on Android — with preserved originals, 80 styles and interactive depth.",
       downloadNow:"Download PMDDcam 0.4.0",explore:"Explore features",compareTitle:"Original ↔ PMDD",compareText:"The same photo. The original stays untouched while PMDD depth, style and appearance remain independently editable.",original:"Original",enhanced:"PMDD",
@@ -32,6 +58,19 @@
       foot:"PMDD — Perceptual Motion & Depth Design · Kolja Werner Schumann (KoSch) · Human-AI co-design with ChatGPT"
     },
     fr:{
+      "archive":"Archives des versions",
+      "archiveIntro":"Versions préliminaires Android actuelles et antérieures, avec téléchargement direct des APK et sommes de contrôle SHA-256.",
+      "currentRelease":"Version préliminaire actuelle",
+      "release040":"80 styles, des techniques de rendu retravaillées et une animation autonome des objets avec intensité et vitesse réglables.",
+      "releaseDetails":"Détails de la version",
+      "allVersions":"Toutes les versions publiées",
+      "archiveNote":"Chaque lien APK télécharge la version indiquée. Les versions antérieures restent disponibles.",
+      "version":"Version",
+      "releaseDate":"Publication",
+      "fileSize":"Taille",
+      "releaseFiles":"Téléchargements et détails",
+      "current":"Actuelle",
+      "githubReleases":"Toutes les versions sur GitHub",
       brandTag:"Caméra PMDD pour Android",home:"Aperçu",features:"Fonctions",technology:"Technologie",download:"Télécharger l’APK",language:"Langue",
       heroTitle:"Photographiez un espace plus profond.",heroSub:"Transformez localement vos photos Android en images PMDD stratifiées, avec original conservé, 80 styles et profondeur interactive.",
       downloadNow:"Télécharger PMDDcam 0.4.0",explore:"Voir les fonctions",compareTitle:"Original ↔ PMDD",compareText:"La même photo. L’original reste intact, tandis que la profondeur, le style et le rendu PMDD restent modifiables séparément.",original:"Original",enhanced:"PMDD",
@@ -42,6 +81,19 @@
       foot:"PMDD — Perceptual Motion & Depth Design · Kolja Werner Schumann (KoSch) · Co-design humain-IA avec ChatGPT"
     },
     es:{
+      "archive":"Archivo de versiones",
+      "archiveIntro":"Versiones preliminares de Android actuales y anteriores, con descargas directas de APK y sumas de comprobación SHA-256.",
+      "currentRelease":"Versión preliminar actual",
+      "release040":"80 estilos, técnicas de renderizado mejoradas y animación autónoma de objetos con intensidad y velocidad ajustables.",
+      "releaseDetails":"Detalles de la versión",
+      "allVersions":"Todas las versiones publicadas",
+      "archiveNote":"Cada enlace APK descarga la versión indicada. Las versiones anteriores siguen disponibles.",
+      "version":"Versión",
+      "releaseDate":"Publicación",
+      "fileSize":"Tamaño",
+      "releaseFiles":"Descargas y detalles",
+      "current":"Actual",
+      "githubReleases":"Todas las versiones en GitHub",
       brandTag:"Cámara PMDD para Android",home:"Resumen",features:"Funciones",technology:"Tecnología",download:"Descargar APK",language:"Idioma",
       heroTitle:"Fotografía un espacio más profundo.",heroSub:"Convierte fotos localmente en Android en imágenes PMDD por capas, conservando el original, con 80 estilos y profundidad interactiva.",
       downloadNow:"Descargar PMDDcam 0.4.0",explore:"Ver funciones",compareTitle:"Original ↔ PMDD",compareText:"La misma foto. El original permanece intacto y la profundidad, el estilo y el aspecto PMDD siguen siendo editables por separado.",original:"Original",enhanced:"PMDD",
@@ -52,6 +104,19 @@
       foot:"PMDD — Perceptual Motion & Depth Design · Kolja Werner Schumann (KoSch) · Co-diseño humano-IA con ChatGPT"
     },
     zh:{
+      "archive":"版本归档",
+      "archiveIntro":"当前及历史 Android 预览版，提供 APK 直接下载和 SHA-256 校验值。",
+      "currentRelease":"当前预览版",
+      "release040":"80 种风格、改进的渲染技术，以及强度和速度可调的物体自主动画。",
+      "releaseDetails":"版本详情",
+      "allVersions":"所有已发布版本",
+      "archiveNote":"每个 APK 链接均下载对应的指定版本。历史版本仍可下载。",
+      "version":"版本",
+      "releaseDate":"发布日期",
+      "fileSize":"文件大小",
+      "releaseFiles":"下载与详情",
+      "current":"当前版本",
+      "githubReleases":"查看所有 GitHub 版本",
       brandTag:"Android PMDD 相机",home:"概览",features:"功能",technology:"技术",download:"下载 APK",language:"语言",
       heroTitle:"拍摄更有深度的空间。",heroSub:"在 Android 本地把照片转换为分层 PMDD 图像，同时保留原图，并提供 80 种风格与交互式深度。",
       downloadNow:"下载 PMDDcam 0.4.0",explore:"查看功能",compareTitle:"原图 ↔ PMDD",compareText:"同一张照片。原图保持不变；PMDD 深度、风格和视觉效果可独立继续编辑。",original:"原图",enhanced:"PMDD",
@@ -62,6 +127,19 @@
       foot:"PMDD — Perceptual Motion & Depth Design · Kolja Werner Schumann (KoSch) · 与 ChatGPT 的人机协同设计"
     },
     ja:{
+      "archive":"バージョンアーカイブ",
+      "archiveIntro":"最新および過去の Android プレビュー版。APK の直接ダウンロードと SHA-256 チェックサムを掲載しています。",
+      "currentRelease":"最新プレビュー版",
+      "release040":"80 種のスタイル、改良された描画技法、強さと速さを調整できる物体の自動アニメーション。",
+      "releaseDetails":"リリースの詳細",
+      "allVersions":"公開済みの全バージョン",
+      "archiveNote":"各 APK リンクは表記されたバージョンをダウンロードします。過去のリリースも引き続き利用できます。",
+      "version":"バージョン",
+      "releaseDate":"公開日",
+      "fileSize":"サイズ",
+      "releaseFiles":"ダウンロードと詳細",
+      "current":"最新",
+      "githubReleases":"GitHub の全リリース",
       brandTag:"Android 向け PMDD カメラ",home:"概要",features:"機能",technology:"技術",download:"APKをダウンロード",language:"言語",
       heroTitle:"より深い空間を撮影。",heroSub:"Android 上でローカルに、写真をレイヤー化された PMDD イメージへ。原画を保持し、80 スタイルとインタラクティブな奥行きを提供します。",
       downloadNow:"PMDDcam 0.4.0 をダウンロード",explore:"機能を見る",compareTitle:"Original ↔ PMDD",compareText:"同じ写真を比較。オリジナルは変更せず、PMDD の奥行き・スタイル・見え方は個別に編集できます。",original:"オリジナル",enhanced:"PMDD",
@@ -100,7 +178,7 @@
       a.href=u.toString();
     });
     const page=document.body.dataset.page||"home";
-    const titles={home:"PMDDcam",features:dict.fTitle+" · PMDDcam",technology:dict.techTitle+" · PMDDcam"};
+    const titles={home:"PMDDcam",releases:dict.archive+" · PMDDcam",features:dict.fTitle+" · PMDDcam",technology:dict.techTitle+" · PMDDcam"};
     document.title=titles[page]||"PMDDcam";
   }
 

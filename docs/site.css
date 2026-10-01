@@ -76,6 +76,19 @@ table.spec{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;
 .note{border-left:3px solid var(--mint);padding:12px 16px;background:rgba(98,245,196,.07);border-radius:0 14px 14px 0;color:var(--muted)}
 footer{padding:38px 0 58px;color:var(--muted);border-top:1px solid rgba(98,245,196,.1)}
 .small{font-size:.9rem;color:var(--muted)}
+.release-hero{padding-top:8px}
+.release-hero .card{border-color:var(--mint)}
+.release-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:18px;background:var(--panel)}
+.release-table{width:100%;border-collapse:collapse;text-align:left}
+.release-table caption{text-align:left;padding:14px 18px;font-weight:800;color:var(--mint)}
+.release-table th,.release-table td{padding:16px 18px;border-top:1px solid var(--line);vertical-align:top}
+.release-table thead{color:var(--muted);font-size:.9rem}
+.release-table time{white-space:nowrap}
+.release-meta{margin-top:5px;font-weight:400}
+.release-table .current-release{background:rgba(98,245,196,.07)}
+.release-badge{display:block;color:var(--mint);font-size:.8rem;margin-top:4px}
+.release-links{display:flex;flex-wrap:wrap;gap:10px 18px}
+.release-links a{white-space:nowrap}
 @media(max-width:840px){
   .hero-grid,.card-grid{grid-template-columns:1fr}
   .gallery{grid-template-columns:1fr}
@@ -84,6 +97,9 @@ footer{padding:38px 0 58px;color:var(--muted);border-top:1px solid rgba(98,245,1
   .hero{padding-top:32px}
 }
 @media(max-width:560px){
+  .release-table th,.release-table td{padding:12px}
+  .release-links{flex-direction:column;gap:12px}
+  .release-links a{white-space:normal}
   .compare{grid-template-columns:1fr}
   .shell{width:min(100% - 20px,1160px)}
   .lang{max-width:125px}
