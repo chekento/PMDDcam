@@ -12,6 +12,9 @@ import android.graphics.*
 import android.os.SystemClock
 import android.view.View
 import android.view.ViewGroup
+import android.view.Gravity
+import android.widget.FrameLayout
+import android.opengl.GLES20
 import androidx.camera.view.PreviewView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
@@ -149,14 +152,29 @@ class DeviceTest {
         val objects=listOf(SceneObject(1,"Moving foreground",.23f,.18f,.69f,.74f,Role.DYNAMIC,Motion.DRIFT,15f,.7f,.9f,.85f),SceneObject(2,"Stable anchor",.28f,.3f,.4f,.65f,Role.ANCHOR,depth=.85f))
         ActivityScenario.launch<MainActivity>(Intent(instrumentation.targetContext,MainActivity::class.java)).use{scenario->
             lateinit var view:DepthViewer
-            scenario.onActivity{activity->view=DepthViewer(activity);activity.setContentView(view);view.setImage(image,depth,Recipe(),objects);view.active=true}
+            scenario.onActivity{activity->
+                view=DepthViewer(activity)
+                // A fixed surface keeps late immersive-inset/layout changes out of pixel comparisons.
+                val size=minOf(768,activity.resources.displayMetrics.widthPixels,activity.resources.displayMetrics.heightPixels)
+                val holder=FrameLayout(activity).apply{addView(view,FrameLayout.LayoutParams(size,size,Gravity.CENTER))}
+                activity.setContentView(holder);view.animationTimeOverride=0f
+                view.setImage(image,depth,Recipe(),objects);view.active=true
+            }
             fun awaitFrame(count:Int){val deadline=SystemClock.uptimeMillis()+10_000;while(view.completedFrames<count&&SystemClock.uptimeMillis()<deadline)SystemClock.sleep(20);assertTrue("GL frame completes",view.completedFrames>=count)}
             awaitFrame(1)
             fun frame(x:Float,y:Float,z:Float,active:Boolean=true,time:Float=0f):Bitmap{
-                val previous=view.completedFrames
-                scenario.onActivity{view.animationTimeOverride=time;view.active=active;view.setPosition(x,y,z)};awaitFrame(previous+1)
-                // A second draw ensures PixelCopy sees the requested position after buffer swap.
-                val next=view.completedFrames;view.requestRender();awaitFrame(next+1)
+                val configured=CountDownLatch(1);var targetFrame=0
+                scenario.onActivity{
+                    view.animationTimeOverride=time;view.active=active
+                    // Set the position and frame target between GL draws, not during an older draw.
+                    view.queueEvent{view.setPosition(x,y,z);targetFrame=view.completedFrames+1;configured.countDown()}
+                }
+                assertTrue("GL state is configured",configured.await(10,TimeUnit.SECONDS));awaitFrame(targetFrame)
+                // completedFrames counts draw submission. The queued fence also waits for that
+                // draw's EGL buffer swap and GPU completion before PixelCopy reads the surface.
+                val presented=CountDownLatch(1)
+                view.queueEvent{GLES20.glFinish();presented.countDown()}
+                assertTrue("Requested GL frame is presented",presented.await(10,TimeUnit.SECONDS))
                 val result=Bitmap.createBitmap(192,192,Bitmap.Config.ARGB_8888);val done=CountDownLatch(1);var code=-1
                 scenario.onActivity{PixelCopy.request(view,result,{value->code=value;done.countDown()},Handler(Looper.getMainLooper()))}
                 assertTrue(done.await(10,TimeUnit.SECONDS));assertEquals(PixelCopy.SUCCESS,code);return result
