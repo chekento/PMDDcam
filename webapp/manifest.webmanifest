@@ -1,0 +1,13 @@
+{
+  "name": "PMDDcam Web",
+  "short_name": "PMDDcam",
+  "description": "Perceptual Motion & Depth Design Camera — browser edition",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#061015",
+  "theme_color": "#071116",
+  "icons": [
+    {"src":"../docs/assets/pmddcam-hero-01.webp","sizes":"512x512","type":"image/webp","purpose":"any"}
+  ]
+}
