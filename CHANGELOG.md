@@ -1,5 +1,16 @@
 # Änderungen
 
+## Web 0.2.0 · 01.10.2026 · KI-Tiefe, echte Layer-Perspektive & Head-Tracking
+
+- Web-Unterprojekt von einer kompakten Technikdemo zu einer eigenständigen PMDD-Anwendung ausgebaut.
+- Optionales Depth Anything V2 Small über Transformers.js: KI-Tiefenkarte direkt im Browser; heuristische, kantenbewusste Tiefe bleibt als sofort verfügbarer Fallback.
+- WebGL-Viewer mit 8–128 Tiefenabtastungen, kontinuierlicher Oberflächensuche, X/Y/Z-Betrachterposition und tiefenkonsistentem Disocclusion-Fill.
+- MediaPipe Face Landmarker als optionales Head-Tracking: Frontkamera steuert links/rechts, oben/unten und näher/weiter. Pointer/Touch und Geräteneigung bleiben Alternativen.
+- Statische PMDD-Bewegungsillusion verstärkt: asymmetrische Kantenphase, Tiefengrenzen, periphere Drift- sowie Annäherungs-/Entfernungs-Cues werden in das Einzelbild gerendert.
+- 80 vorhandene Look-IDs übernommen und in deutlich unterschiedliche Renderfamilien aufgeteilt: Foto/Film, Comic/Cel, Halftone, Aquarell, Öl, Zeichnung, Pixel, Neon, Duoton, Thermal, Solar und Bloom.
+- Split-Compare, Depth-Vorschau, lokale IndexedDB-Projekte, PNG-Export, PMDD-Rezept-Import/Export und installierbare PWA-App-Shell ergänzt.
+
+
 ## 0.4.0 · 01.10.2026 · Lebendige Objekte & 80 Looks
 
 - Eigenständige, laufende Objektanimation im interaktiven Betrachter: Stärke und Tempo separat regelbar, unterschiedliche Phasen und Geschwindigkeiten je Objekt, langsamere Atmosphäre. Bewegungsweg an Objektgröße begrenzt, feste Anker und geschützte Gesichter ausgespart. Bei Pause, Originalvergleich und statischer Ansicht stoppt die Animation.
