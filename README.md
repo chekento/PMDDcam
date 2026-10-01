@@ -11,7 +11,8 @@
 ![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)
 ![Processing](https://img.shields.io/badge/photo_processing-on--device-19d3ae)
 ![Cloud](https://img.shields.io/badge/photo_uploads-none-25343c)
-[![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-5b4bdb)](LICENSE)\n[![Privacy](https://img.shields.io/badge/privacy-AI-third--party-2ea44f)](PRIVACY.md)
+[![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-5b4bdb)](LICENSE)
+[![Privacy](https://img.shields.io/badge/privacy-AI-third--party-2ea44f)](PRIVACY.md)
 
 ### [⬇ Android-APK · PMDDcam 0.4.0 herunterladen](https://github.com/chekento/PMDDcam/releases/download/v0.4.0/PMDDcam-0.4.0.apk)
 
