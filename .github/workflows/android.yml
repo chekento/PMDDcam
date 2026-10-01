@@ -116,3 +116,4 @@ jobs:
             gh release upload v0.4.0 release/* --clobber
           else
             gh release create v0.4.0 release/* --target '${{ github.sha }}' --title 'PMDDcam 0.4.0 · Android Preview' --prerelease --notes '80 clearly differentiated local looks: painted regions, comic contours, watercolor paper, oil strokes, neon bloom, print screens and fixed retro palettes. New autonomous object animation with independent amount and speed, protected anchors, lifecycle pause and six-direction viewer control. Original/PMDD comparison, offline processing, original-preserving projects and optional shutter sound remain included. Static PNG/JPEG export stays still. See CHANGELOG for details.'
+          fi
