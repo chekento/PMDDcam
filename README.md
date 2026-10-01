@@ -31,6 +31,13 @@
 
 ---
 
+
+## 🌐 Interaktive WebApp
+
+<a href="https://raw.githack.com/chekento/PMDDcam/main/webapp/index.html"><strong>▶ PMDDcam Web direkt im Browser starten</strong></a>
+
+Die Browser-Version liegt als eigenständiges Unterprojekt in [`webapp/`](webapp/) und bietet Bild-Upload, Kamera, Original ↔ PMDD, 80 Looks, 8–128 Tiefenebenen, statische Bewegungsillusion, interaktive 2.5D-Parallaxe, Touch/Maus, Geräteneigung, optionales Head-Tracking und lokalen PNG-Export — ohne Cloud-Upload oder API-Schlüssel.
+
 ## 📲 Android Preview herunterladen
 
 <a href="https://github.com/chekento/PMDDcam/releases/download/v0.4.0/PMDDcam-0.4.0.apk">
